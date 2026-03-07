@@ -1,35 +1,23 @@
 # Core
-# python>=3.10
+# python==3.12.9
 
 # PyTorch (CUDA 11.8 – Colab compatible)
-torch
-torchvision
-torchaudio
-lightning # PyTorch Lightning
+torch==2.2.2
+torchvision==0.17.2
 
 # Data & numerics
-numpy
-pandas
-scikit-learn
+numpy==1.26.4
+pandas==2.2.1
+scikit-learn==1.5.2
 
 # Images & vision
-pillow # Image processing
-opencv-python
-albumentations # Image augmentations
+pillow==10.2.0
 
 # Training utilities
-tqdm
-matplotlib
-tensorboard
-einops
-timm # PyTorch image models
-wandb # Weights & Biases
-
+tqdm==4.66.5
+matplotlib==3.8.4
+pyyaml==6.0.1
 
 # Jupyter / VS Code support
-jupyter
-ipykernel
-
-# Kaggle dataset access
-kaggle
-kagglehub[pandas-datasets]
+jupyter==1.0.0
+ipykernel==6.28.0

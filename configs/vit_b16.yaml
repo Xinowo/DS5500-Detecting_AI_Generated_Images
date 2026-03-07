@@ -1,0 +1,30 @@
+# ViT-B/16 linear-probe configuration
+# Stage 1: head-only (freeze_backbone: true, unfreeze_last_n_blocks: 0)
+# Stage 2: fine-tune last transformer blocks (set unfreeze_last_n_blocks > 0)
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+data_root:   "data/sampled_data_5k"
+splits_dir:  "data/splits"
+num_workers: 2
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_name:             "vit_b_16"
+freeze_backbone:        true
+unfreeze_last_n_blocks: 0   # 0=head only | N=last N transformer encoder blocks
+
+# ── Training ──────────────────────────────────────────────────────────────────
+epochs:          20
+batch_size:      64
+lr:              3.0e-4   # head learning rate
+backbone_lr:     1.0e-5   # active when unfreeze_last_n_blocks > 0
+weight_decay:    1.0e-2
+label_smoothing: 0.1
+patience:        5
+grad_clip:       1.0
+use_amp:         true
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+run_name: "vit-b16-5k-linear-probe"
+seed:     42
+save_dir: "checkpoints/vit_b16"
+
