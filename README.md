@@ -2,7 +2,7 @@
 
 **Team 2 | Northeastern University DS5500 Data Capstone | Spring 2026**
 
-**Team Members:** Wang
+**Team Members:** Xin Wang, Jiajun Fang
 
 ---
 
@@ -38,19 +38,28 @@ Both runs use a frozen backbone (linear probe).  Fine-tuning is supported via
 DS5500-Detecting_AI_Generated_Images/
 ├── configs/                  # YAML hyperparameter configs (one per model)
 │   ├── resnet50.yaml
-│   └── vit_b16.yaml
+│   ├── vit_b16.yaml
+│   └── smoke_test.yaml       # CPU / quick sanity-check config
 │
 ├── data/
 │   ├── dataset.py            # AIDataset, transforms, split logic, DataLoader factory
+│   ├── sampled_data_5k/      # 5 k-image local subset
+│   │   ├── train/
+│   │   ├── validation/
+│   │   └── test/
 │   └── splits/               # Pre-computed train/val/test split CSVs (gitignored)
+│
+├── docs/
+│   ├── workflow.md           # End-to-end pipeline walkthrough
+│   └── code_walk_requirements.md
 │
 ├── models/
 │   ├── resnet.py             # ResNet-50 builder
 │   ├── vit.py                # ViT-B/16 builder
-│   └── model_factory.py      # build_model() dispatcher (torchvision + timm fallback)
+│   └── model_factory.py      # build_model() dispatcher
 │
 ├── training/
-│   ├── train.py              # CLI entry-point (defines loss inline)
+│   ├── train.py              # CLI entry-point
 │   └── trainer.py            # Trainer class (fit / evaluate)
 │
 ├── visualization/
@@ -108,7 +117,17 @@ The original test set (`test_data_v2`) has no labels and is not used.
 pip install -r requirements.txt
 ```
 
-### 2. Local training (pre-sampled data in `data/sampled_data_5k/`)
+### 2. Smoke test (CPU, no GPU required)
+
+To verify the full pipeline runs without errors on a CPU machine:
+
+```bash
+python -m training.train --config configs/smoke_test.yaml
+```
+
+This runs 2 epochs with `batch_size=8`, `use_amp=false`, and `num_workers=0` — finishes in a few minutes on CPU.
+
+### 3. Local training (pre-sampled data in `data/sampled_data_5k/`)
 
 Split CSVs are already present in `data/splits/`.  Run directly from the repo root:
 
@@ -116,7 +135,7 @@ Split CSVs are already present in `data/splits/`.  Run directly from the repo ro
 python -m training.train --config configs/resnet50.yaml
 ```
 
-### 3. Google Colab — notebooks or full-dataset training
+### 4. Google Colab — notebooks or full-dataset training
 
 Open a notebook from `notebooks/` directly in Colab, or run the CLI with the full dataset by mounting Google Drive and passing paths as CLI flags:
 
@@ -128,19 +147,34 @@ python -m training.train \
     --save_dir  /content/drive/MyDrive/checkpoints/resnet50
 ```
 
-### 4. Results
+### 5. Outputs
 
-After training completes, the following files are saved under `save_dir` (e.g. `checkpoints/resnet50/`):
+After training completes, the following files are saved automatically:
+
+**`checkpoints/<model>/`**
 
 | File | Contents |
 |---|---|
-| `best_model.pth` | Best checkpoint (lowest val loss) |
+| `best_model_<timestamp>.pth` | Best checkpoint (lowest val loss) |
 | `config.yaml` | Config used for this run |
-| `test_metrics.json` | Test set accuracy, AUC, F1, confusion matrix |
+| `test_metrics_<timestamp>.json` | Test set accuracy, AUC, F1, confusion matrix |
+| `test_preds_<timestamp>.npz` | Per-sample predicted probs and true labels |
 
-Training history (loss + val accuracy per epoch) is saved to `outputs/metrics/<run_name>_history.csv`.
+**`outputs/metrics/`**
 
-All paths in the modular scripts are relative to the repository root.
+| File | Contents |
+|---|---|
+| `<run_name>_<timestamp>_history.csv` | Per-epoch train loss, val loss, val metrics |
+
+**`outputs/figures/`** (auto-generated after training)
+
+| File | Contents |
+|---|---|
+| `<timestamp>_<run_name>_training_curves.png` | Train/val loss and val accuracy curves |
+| `<timestamp>_<run_name>_confusion_matrix.png` | Test set confusion matrix |
+| `<timestamp>_<run_name>_roc_curve.png` | Test set ROC curve with AUC |
+
+All files from the same run share the same `<timestamp>` (`YYYYMMDD_HHMMSS`).
 
 ---
 
@@ -155,22 +189,6 @@ Add new models by registering them in `models/model_factory.py`.
 
 ---
 
-## Training Details
-
-| Setting             | Value              |
-|---------------------|--------------------|
-| Optimizer           | AdamW              |
-| Head LR             | 3e-4               |
-| Backbone LR         | 1e-5               |
-| Weight decay        | 1e-2               |
-| Label smoothing     | 0.1                |
-| Scheduler           | CosineAnnealingLR  |
-| Mixed precision     | Yes (AMP)          |
-| Gradient clip       | 1.0                |
-| Early stopping      | patience = 5       |
-| Random seed         | 42                 |
-
----
 
 ## Assumptions and Limitations
 

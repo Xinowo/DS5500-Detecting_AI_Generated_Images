@@ -1,0 +1,28 @@
+# Smoke-test config — CPU only, minimal data, 2 epochs
+# Usage: python -m training.train --config configs/smoke_test.yaml
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+data_root:   "data/sampled_data_5k"
+splits_dir:  "data/splits"
+num_workers: 0          # must be 0 on Windows CPU to avoid multiprocessing issues
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_name:             "resnet50"
+freeze_backbone:        true
+unfreeze_last_n_blocks: 0
+
+# ── Training ──────────────────────────────────────────────────────────────────
+epochs:          2
+batch_size:      8
+lr:              3.0e-4
+backbone_lr:     1.0e-5
+weight_decay:    1.0e-2
+label_smoothing: 0.1
+patience:        2
+grad_clip:       1.0
+use_amp:         false   # GradScaler is CUDA-only; must be false on CPU
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+run_name: "smoke-test"
+seed:     42
+save_dir: "checkpoints/smoke_test"

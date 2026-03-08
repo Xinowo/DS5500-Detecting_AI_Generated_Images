@@ -148,6 +148,81 @@ def _save_or_show(fig: plt.Figure, save_path: str | Path | None) -> None:
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight")
         print(f"Figure saved to {save_path}")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# CLI entry point
+# ---------------------------------------------------------------------------
+def main() -> None:
+    """Generate all plots for a given training run.
+
+    Usage::
+
+        python -m visualization.visualize \\
+            --history_csv    outputs/metrics/resnet50-5k_20260307_143022_history.csv \\
+            --checkpoint_dir checkpoints/resnet50 \\
+            --timestamp      20260307_143022
+
+    Saves three figures to ``outputs/figures/``:
+      ``<timestamp>_<run_name>_training_curves.png``
+      ``<timestamp>_<run_name>_confusion_matrix.png``
+      ``<timestamp>_<run_name>_roc_curve.png``
+    """
+    import argparse
+    import json
+    import pandas as pd
+
+    parser = argparse.ArgumentParser(description="Generate AIGI-Detection training visualizations.")
+    parser.add_argument("--history_csv",    required=True,
+                        help="Path to <run_name>_<timestamp>_history.csv")
+    parser.add_argument("--checkpoint_dir", required=True,
+                        help="Checkpoint directory (contains test_metrics_<ts>.json and test_preds_<ts>.npz)")
+    parser.add_argument("--timestamp",      required=True,
+                        help="Timestamp string matching the training run, e.g. 20260307_143022")
+    args = parser.parse_args()
+
+    ts       = args.timestamp
+    ckpt_dir = Path(args.checkpoint_dir)
+    fig_dir  = Path("outputs/figures")
+
+    # Derive run_name from CSV stem: <run_name>_<timestamp>_history
+    csv_stem = Path(args.history_csv).stem              # e.g. "resnet50-5k_20260307_143022_history"
+    run_name = csv_stem.replace(f"_{ts}_history", "")  # e.g. "resnet50-5k"
+
+    # 1. Training curves
+    df = pd.read_csv(args.history_csv)
+    plot_training_curves(
+        history   = df.to_dict(orient="list"),
+        save_path = fig_dir / f"{ts}_{run_name}_training_curves.png",
+        title     = f"{run_name} Training Curves",
+    )
+
+    # 2. Confusion matrix
+    metrics_path = ckpt_dir / f"test_metrics_{ts}.json"
+    with open(metrics_path) as f:
+        metrics = json.load(f)
+    plot_confusion_matrix(
+        cm        = np.array(metrics["confusion_matrix"]),
+        save_path = fig_dir / f"{ts}_{run_name}_confusion_matrix.png",
+        title     = f"{run_name} Confusion Matrix",
+    )
+
+    # 3. ROC curve
+    preds_path = ckpt_dir / f"test_preds_{ts}.npz"
+    data = np.load(preds_path)
+    plot_roc_curve(
+        labels    = data["labels"],
+        probs     = data["probs"],
+        save_path = fig_dir / f"{ts}_{run_name}_roc_curve.png",
+        title     = f"{run_name} ROC Curve",
+    )
+
+    print(f"\nAll figures saved to {fig_dir}/")
+
+
+if __name__ == "__main__":
+    main()
         plt.close(fig)
     else:
         plt.show()

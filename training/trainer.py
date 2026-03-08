@@ -73,10 +73,12 @@ class Trainer:
         cfg = self.cfg
         os.makedirs(cfg.save_dir, exist_ok=True)
 
-        # Local CSV log: outputs/metrics/<run_name>_history.csv
+        # Local CSV log: outputs/metrics/<run_name>_<timestamp>_history.csv
+        import datetime
+        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = Path("outputs/metrics")
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_path = log_dir / f"{cfg.run_name}_history.csv"
+        log_path = log_dir / f"{cfg.run_name}_{self.timestamp}_history.csv"
         csv_fields = ["epoch", "train_loss", "val_loss", "val_roc_auc",
                       "val_accuracy", "val_precision", "val_recall", "val_f1"]
         log_file = open(log_path, "w", newline="")
@@ -116,11 +118,11 @@ class Trainer:
             self.scheduler.step()
 
             if val_loss < best_val_loss:
-                best_val_loss    = val_loss
-                patience_counter = 0
-                ckpt_path        = Path(cfg.save_dir) / "best_model.pth"
-                torch.save(self.model.state_dict(), ckpt_path)
-                print(f"  Checkpoint saved -> {ckpt_path}")
+                best_val_loss       = val_loss
+                patience_counter    = 0
+                self.best_ckpt_path = Path(cfg.save_dir) / f"best_model_{self.timestamp}.pth"
+                torch.save(self.model.state_dict(), self.best_ckpt_path)
+                print(f"  Checkpoint saved -> {self.best_ckpt_path}")
             else:
                 patience_counter += 1
                 print(f"  No improvement. Patience {patience_counter}/{cfg.patience}")
@@ -161,10 +163,16 @@ class Trainer:
 
         result   = {"loss": test_loss, **metrics}
         out      = {k: float(v) if not hasattr(v, "tolist") else v.tolist() for k, v in result.items()}
-        json_path = Path(self.cfg.save_dir) / "test_metrics.json"
+        ts = getattr(self, "timestamp", "unknown")
+        json_path = Path(self.cfg.save_dir) / f"test_metrics_{ts}.json"
         with open(json_path, "w") as fh:
             json.dump(out, fh, indent=2)
         print(f"  Test metrics saved -> {json_path}")
+
+        # Save per-sample probs and labels for ROC curve plotting
+        npz_path = Path(self.cfg.save_dir) / f"test_preds_{ts}.npz"
+        np.savez(npz_path, probs=test_preds, labels=test_labels)
+        print(f"  Test predictions saved -> {npz_path}")
         return result
 
     # ------------------------------------------------------------------

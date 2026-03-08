@@ -37,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from data.dataset    import prepare_splits, get_dataloaders
 from models          import build_model
 from training.trainer import Trainer
+from visualization.visualize import plot_training_curves, plot_confusion_matrix, plot_roc_curve
 
 
 # ---------------------------------------------------------------------------
@@ -69,7 +70,7 @@ class Config:
     grad_clip:       float = 1.0
     use_amp:         bool  = True
 
-    # W&B
+    # Logging
     run_name: str        = "run"
 
     # Misc
@@ -79,7 +80,7 @@ class Config:
 
 def load_config(yaml_path: str) -> Config:
     """Merge YAML file into a Config dataclass."""
-    with open(yaml_path, "r") as fh:
+    with open(yaml_path, "r", encoding="utf-8") as fh:
         overrides = yaml.safe_load(fh)
     cfg = Config()
     for key, value in (overrides or {}).items():
@@ -193,8 +194,43 @@ def main() -> None:
     # ------------------------------------------------------------------
     # Evaluate on test set
     # ------------------------------------------------------------------
-    ckpt_path = Path(cfg.save_dir) / "best_model.pth"
-    trainer.evaluate(test_loader, checkpoint_path=ckpt_path)
+    trainer.evaluate(test_loader, checkpoint_path=trainer.best_ckpt_path)
+
+    # ------------------------------------------------------------------
+    # Visualize
+    # ------------------------------------------------------------------
+    import json
+    import pandas as pd
+    ts       = trainer.timestamp
+    fig_dir  = Path("outputs/figures")
+    ckpt_dir = Path(cfg.save_dir)
+
+    history_csv = Path("outputs/metrics") / f"{cfg.run_name}_{ts}_history.csv"
+    df = pd.read_csv(history_csv)
+    plot_training_curves(
+        history   = df.to_dict(orient="list"),
+        save_path = fig_dir / f"{ts}_{cfg.run_name}_training_curves.png",
+        title     = f"{cfg.run_name} Training Curves",
+    )
+
+    with open(ckpt_dir / f"test_metrics_{ts}.json") as f:
+        metrics = json.load(f)
+    import numpy as np
+    plot_confusion_matrix(
+        cm        = np.array(metrics["confusion_matrix"]),
+        save_path = fig_dir / f"{ts}_{cfg.run_name}_confusion_matrix.png",
+        title     = f"{cfg.run_name} Confusion Matrix",
+    )
+
+    preds = np.load(ckpt_dir / f"test_preds_{ts}.npz")
+    plot_roc_curve(
+        labels    = preds["labels"],
+        probs     = preds["probs"],
+        save_path = fig_dir / f"{ts}_{cfg.run_name}_roc_curve.png",
+        title     = f"{cfg.run_name} ROC Curve",
+    )
+
+    print(f"\nAll figures saved to {fig_dir}/")
 
 
 if __name__ == "__main__":
