@@ -1,10 +1,11 @@
-# Smoke-test config — CPU only, minimal data, 2 epochs
-# Usage: python -m training.train --config configs/smoke_test.yaml
+# ResNet-50 local configuration example
+# Copy this file to resnet50.local.yaml and edit paths for your machine.
+# *.local.yaml files are gitignored and won't be committed.
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-data_root:   "data/sampled_data_5k"
-splits_dir:  "data/splits"
-num_workers: 0          # must be 0 on Windows CPU to avoid multiprocessing issues
+data_root:   ""
+splits_dir:  "data/splits"   # can stay relative if splits are in repo
+num_workers: 4                # adjust based on your CPU cores
 
 # ── Model ─────────────────────────────────────────────────────────────────────
 model_name:             "resnet50"
@@ -12,18 +13,18 @@ freeze_backbone:        true
 unfreeze_last_n_blocks: 0
 
 # ── Training ──────────────────────────────────────────────────────────────────
-epochs:          2
-batch_size:      8
+epochs:          20
+batch_size:      64
 lr:              3.0e-4
 backbone_lr:     1.0e-5
 weight_decay:    1.0e-2
 label_smoothing: 0.1
-patience:        2
+patience:        5
 grad_clip:       1.0
-use_amp:         false   # GradScaler is CUDA-only; must be false on CPU
+use_amp:         true
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
-run_name:    "smoke-test"
+run_name:    "resnet50-5k-linear-probe"
 seed:        42
-save_dir:    "checkpoints/smoke_test"
-outputs_dir: "outputs"
+save_dir:    "" # save checkpoints
+outputs_dir: "" # output metrics/logs/figures

@@ -111,6 +111,35 @@ The original test set (`test_data_v2`) has no labels and is not used.
 > The Jupyter notebooks in `notebooks/` were developed and run on **Google Colab** (full 79,950-image dataset, GPU).  
 > The `training/` scripts can be run **locally** using the pre-sampled 5,000-image subset in `data/sampled_data_5k/`.
 
+### HPC / Cluster Setup
+
+If you're running on an HPC cluster with separate `/scratch/` storage:
+
+**Option 1: Use CLI overrides** (recommended for quick runs)
+```bash
+python -m training.train \
+    --config    configs/resnet50.yaml \
+    --data_root /scratch/username/DS5500_Data_Capstone/data/sampled_data_5k \
+    --save_dir  /scratch/username/DS5500_Data_Capstone/checkpoints/resnet50
+```
+
+**Option 2: Create a local config file** (recommended for repeated experiments)
+```bash
+# Copy the example template
+cp configs/resnet50.local.yaml.example configs/resnet50.local.yaml
+
+# Edit paths to match your scratch directory
+vim configs/resnet50.local.yaml
+
+# Run with your local config
+python -m training.train --config configs/resnet50.local.yaml
+```
+
+**Storage strategy:**
+- **`/scratch/`**: Large files (data, checkpoints, outputs) — high-speed but may be purged periodically
+- **`/home/`**: Code repo and final results summary — persistent but limited quota
+- **Training history CSVs**: Save to `/scratch/outputs/` during training, then copy key experiments to `/home/` for long-term archiving
+
 ### 1. Install dependencies
 
 ```bash

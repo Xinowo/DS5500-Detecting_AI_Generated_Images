@@ -24,7 +24,8 @@ grad_clip:       1.0
 use_amp:         true
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
-run_name: "resnet50-5k-linear-probe"
-seed:     42
-save_dir: "checkpoints/resnet50"
+run_name:    "resnet50-5k-linear-probe"
+seed:        42
+save_dir:    "checkpoints/resnet50"
+outputs_dir: "outputs"
 

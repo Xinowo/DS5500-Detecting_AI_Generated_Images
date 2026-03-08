@@ -74,8 +74,9 @@ class Config:
     run_name: str        = "run"
 
     # Misc
-    seed:     int = 42
-    save_dir: str = "checkpoints"
+    seed:        int = 42
+    save_dir:    str = "checkpoints"
+    outputs_dir: str = "outputs"  # base dir for metrics/figures/logs
 
 
 def load_config(yaml_path: str) -> Config:
@@ -103,20 +104,22 @@ def seed_everything(seed: int) -> None:
 # ---------------------------------------------------------------------------
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train an AIGI-Detection model.")
-    parser.add_argument("--config",     required=True, help="Path to YAML config file.")
-    parser.add_argument("--data_root",  default=None,  help="Override data_root from config.")
-    parser.add_argument("--splits_dir", default=None,  help="Override splits_dir from config.")
-    parser.add_argument("--csv_path",   default=None,  help="Override csv_path from config.")
-    parser.add_argument("--save_dir",   default=None,  help="Override save_dir from config.")
+    parser.add_argument("--config",      required=True, help="Path to YAML config file.")
+    parser.add_argument("--data_root",   default=None,  help="Override data_root from config.")
+    parser.add_argument("--splits_dir",  default=None,  help="Override splits_dir from config.")
+    parser.add_argument("--csv_path",    default=None,  help="Override csv_path from config.")
+    parser.add_argument("--save_dir",    default=None,  help="Override save_dir from config.")
+    parser.add_argument("--outputs_dir", default=None,  help="Override outputs_dir from config.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
 
     # Command-line overrides
-    if args.data_root:  cfg.data_root  = args.data_root
-    if args.splits_dir: cfg.splits_dir = args.splits_dir
-    if args.csv_path:   cfg.csv_path   = args.csv_path
-    if args.save_dir:   cfg.save_dir   = args.save_dir
+    if args.data_root:   cfg.data_root   = args.data_root
+    if args.splits_dir:  cfg.splits_dir  = args.splits_dir
+    if args.csv_path:    cfg.csv_path    = args.csv_path
+    if args.save_dir:    cfg.save_dir    = args.save_dir
+    if args.outputs_dir: cfg.outputs_dir = args.outputs_dir
 
     seed_everything(cfg.seed)
 
@@ -202,10 +205,10 @@ def main() -> None:
     import json
     import pandas as pd
     ts       = trainer.timestamp
-    fig_dir  = Path("outputs/figures")
+    fig_dir  = Path(cfg.outputs_dir) / "figures"
     ckpt_dir = Path(cfg.save_dir)
 
-    history_csv = Path("outputs/metrics") / f"{cfg.run_name}_{ts}_history.csv"
+    history_csv = Path(cfg.outputs_dir) / "metrics" / f"{cfg.run_name}_{ts}_history.csv"
     df = pd.read_csv(history_csv)
     plot_training_curves(
         history   = df.to_dict(orient="list"),

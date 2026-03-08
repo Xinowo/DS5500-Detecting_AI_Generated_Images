@@ -73,10 +73,10 @@ class Trainer:
         cfg = self.cfg
         os.makedirs(cfg.save_dir, exist_ok=True)
 
-        # Local CSV log: outputs/metrics/<run_name>_<timestamp>_history.csv
+        # Local CSV log: <outputs_dir>/metrics/<run_name>_<timestamp>_history.csv
         import datetime
         self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_dir = Path("outputs/metrics")
+        log_dir = Path(cfg.outputs_dir) / "metrics"
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / f"{cfg.run_name}_{self.timestamp}_history.csv"
         csv_fields = ["epoch", "train_loss", "val_loss", "val_roc_auc",

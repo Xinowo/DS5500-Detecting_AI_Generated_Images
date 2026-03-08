@@ -2,11 +2,17 @@
 data/sampled_data_5k/
 docs/
 
+
 # Model checkpoints
 checkpoints/
 
 # Training & evaluation outputs
 outputs/
+logs/
+
+# Local configs (machine-specific paths)
+configs/*.local.yaml
+
 
 # Python cache
 __pycache__/
