@@ -140,6 +140,39 @@ python -m training.train --config configs/resnet50.local.yaml
 - **`/home/`**: Code repo and final results summary — persistent but limited quota
 - **Training history CSVs**: Save to `/scratch/outputs/` during training, then copy key experiments to `/home/` for long-term archiving
 
+**Current cluster path template (per-user):**
+- **Training data root**: `/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k`
+- **Split CSVs**: `data/splits/` (repository-relative)
+- **Local non-Slurm outputs** (from `*.local.yaml`):
+    - Checkpoints: `checkpoints/<model>/` (or override to `/scratch/$USER/...`)
+    - Metrics/Figures: `outputs/` (or override to `/scratch/$USER/...`)
+- **Slurm outputs** (from `slurm/train_*.slurm`):
+    - Run artifacts: `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/`
+    - Slurm logs: `/scratch/$USER/DS5500_Data_Capstone/aigi_logs/`
+
+**srun quick run example (no username hardcode):**
+```bash
+srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
+python -m training.train \
+    --config configs/resnet50.local.yaml \
+    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
+    --save_dir /scratch/$USER/DS5500_Data_Capstone/checkpoints/resnet50 \
+    --outputs_dir /scratch/$USER/DS5500_Data_Capstone/outputs
+```
+
+**slurm (sbatch) background run examples:**
+```bash
+sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_resnet50.slurm
+sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_vit_b16.slurm
+```
+
+Check status and logs:
+```bash
+squeue -u $USER
+sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
+tail -f /scratch/$USER/DS5500_Data_Capstone/aigi_logs/<job-name>-<jobid>.out
+```
+
 ### 1. Install dependencies
 
 ```bash

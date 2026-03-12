@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
-#SBATCH --output=/scratch/%u/aigi_logs/%x-%j.out
-#SBATCH --error=/scratch/%u/aigi_logs/%x-%j.err
+#SBATCH --output=/scratch/%u/DS5500_Data_Capstone/aigi_logs/%x-%j.out
+#SBATCH --error=/scratch/%u/DS5500_Data_Capstone/aigi_logs/%x-%j.err
 
 set -euo pipefail
 
@@ -17,8 +17,9 @@ set -euo pipefail
 # ------------------------------
 ENV_NAME=${ENV_NAME:-ds5500-aigi}
 ANACONDA_MODULE=${ANACONDA_MODULE:-anaconda3/2024.06}
-PROJECT_ROOT=${PROJECT_ROOT:-/home/wang.xin18/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images}
+PROJECT_ROOT=${PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}
 CONFIG_PATH=${CONFIG_PATH:-configs/resnet50.local.yaml}
+SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 
 # Load conda from module system for this batch shell.
 module purge
@@ -42,10 +43,10 @@ cd "$PROJECT_ROOT"
 
 # Per-run directory to avoid overwriting artifacts.
 RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_DIR=/scratch/$USER/aigi_runs/$RUN_ID
+BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
 SAVE_DIR=$BASE_DIR/checkpoints
 OUT_DIR=$BASE_DIR/outputs
-mkdir -p "$SAVE_DIR" "$OUT_DIR" /scratch/$USER/aigi_logs
+mkdir -p "$SAVE_DIR" "$OUT_DIR" "$SCRATCH_BASE/aigi_logs"
 
 echo "RUN_ID=$RUN_ID"
 echo "SAVE_DIR=$SAVE_DIR"

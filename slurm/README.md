@@ -34,20 +34,26 @@ If needed, you can also override the module and project root:
 sbatch --export=ALL,ANACONDA_MODULE=anaconda3/2024.06,PROJECT_ROOT=/home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images slurm/train_resnet50.slurm
 ```
 
+To store run artifacts and Slurm logs under a custom scratch base:
+
+```bash
+sbatch --export=ALL,SCRATCH_BASE=/scratch/$USER/DS5500_Data_Capstone slurm/train_resnet50.slurm
+```
+
 Check status and logs:
 
 ```bash
 squeue -u $USER
 sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
-tail -f /scratch/$USER/aigi_logs/<job-name>-<jobid>.out
+tail -f /scratch/$USER/DS5500_Data_Capstone/aigi_logs/<job-name>-<jobid>.out
 ```
 
 ## Artifacts
 
 Each run gets a unique timestamped directory:
 
-- /scratch/$USER/aigi_runs/<RUN_ID>/checkpoints
-- /scratch/$USER/aigi_runs/<RUN_ID>/outputs
+- /scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/checkpoints
+- /scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/outputs
 
 Inside outputs you will have:
 
