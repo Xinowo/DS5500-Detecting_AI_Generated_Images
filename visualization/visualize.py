@@ -223,6 +223,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-        plt.close(fig)
-    else:
-        plt.show()
+    plt.close(fig)
+else:
+    plt.show()
