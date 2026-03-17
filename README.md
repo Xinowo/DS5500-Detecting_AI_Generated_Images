@@ -164,6 +164,7 @@ mkdir -p "$SAVE_DIR" "$OUT_DIR" "$LOG_DIR"
 python -u -m training.train \
     --config configs/resnet50.local.yaml \
     --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
+    --num_workers 1 \
     --save_dir "$SAVE_DIR" \
     --outputs_dir "$OUT_DIR" \
     2>&1 | tee "$LOG_DIR/srun-resnet50-$RUN_ID.log"

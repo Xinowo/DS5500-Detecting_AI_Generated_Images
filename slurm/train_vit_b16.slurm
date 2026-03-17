@@ -21,6 +21,7 @@ PROJECT_ROOT=${PROJECT_ROOT:-$HOME/DS5500_Data_Capstone/DS5500-Detecting_AI_Gene
 CONFIG_PATH=${CONFIG_PATH:-configs/vit_b16.local.yaml}
 SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 DATA_ROOT=${DATA_ROOT:-/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k}
+NUM_WORKERS=${NUM_WORKERS:-1}
 
 # Load conda from module system for this batch shell.
 module purge
@@ -60,6 +61,7 @@ echo "OUT_DIR=$OUT_DIR"
 python -u -m training.train \
   --config "$CONFIG_PATH" \
   --data_root "$DATA_ROOT" \
+  --num_workers "$NUM_WORKERS" \
   --save_dir "$SAVE_DIR" \
   --outputs_dir "$OUT_DIR" \
   2>&1 | tee "$OUT_DIR/train_console.log"

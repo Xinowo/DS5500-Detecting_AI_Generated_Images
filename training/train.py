@@ -113,16 +113,18 @@ def main() -> None:
     parser.add_argument("--csv_path",    default=None,  help="Override csv_path from config.")
     parser.add_argument("--save_dir",    default=None,  help="Override save_dir from config.")
     parser.add_argument("--outputs_dir", default=None,  help="Override outputs_dir from config.")
+    parser.add_argument("--num_workers", default=None,  type=int, help="Override num_workers from config.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
 
     # Command-line overrides
-    if args.data_root:   cfg.data_root   = args.data_root
-    if args.splits_dir:  cfg.splits_dir  = args.splits_dir
-    if args.csv_path:    cfg.csv_path    = args.csv_path
-    if args.save_dir:    cfg.save_dir    = args.save_dir
-    if args.outputs_dir: cfg.outputs_dir = args.outputs_dir
+    if args.data_root:              cfg.data_root   = args.data_root
+    if args.splits_dir:             cfg.splits_dir  = args.splits_dir
+    if args.csv_path:               cfg.csv_path    = args.csv_path
+    if args.save_dir:               cfg.save_dir    = args.save_dir
+    if args.outputs_dir:            cfg.outputs_dir = args.outputs_dir
+    if args.num_workers is not None: cfg.num_workers = args.num_workers
 
     seed_everything(cfg.seed)
 
