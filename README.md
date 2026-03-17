@@ -30,7 +30,7 @@ Objectives:
 Both runs use a frozen backbone (linear probe).  Fine-tuning is supported via
 `unfreeze_last_n_blocks` in the config.
 
----
+<!-- ---
 
 ## Project Structure
 
@@ -76,7 +76,7 @@ DS5500-Detecting_AI_Generated_Images/
 │
 ├── requirements.txt
 └── .gitignore
-```
+``` -->
 
 ---
 
@@ -139,6 +139,64 @@ python -m training.train --config configs/resnet50.local.yaml
 - **`/scratch/`**: Large files (data, checkpoints, outputs) — high-speed but may be purged periodically
 - **`/home/`**: Code repo and final results summary — persistent but limited quota
 - **Training history CSVs**: Save to `/scratch/outputs/` during training, then copy key experiments to `/home/` for long-term archiving
+
+**Current cluster path template (per-user):**
+- **Training data root**: `/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k`
+- **Split CSVs**: `data/splits/` (repository-relative)
+- **Local non-Slurm outputs** (from `*.local.yaml`):
+    - Checkpoints: `checkpoints/<model>/` (or override to `/scratch/$USER/...`)
+    - Metrics/Figures: `outputs/` (or override to `/scratch/$USER/...`)
+- **Slurm outputs** (from `slurm/train_*.slurm`):
+    - Run artifacts: `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/`
+    - Slurm logs: `/scratch/$USER/DS5500_Data_Capstone/aigi_logs/`
+
+**srun quick run example (no username hardcode):**
+```bash
+srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
+SCRATCH_BASE=/scratch/$USER/DS5500_Data_Capstone
+RUN_ID=$(date +%Y%m%d_%H%M%S)
+BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
+SAVE_DIR=$BASE_DIR/checkpoints
+OUT_DIR=$BASE_DIR/outputs
+LOG_DIR=$SCRATCH_BASE/aigi_logs
+mkdir -p "$SAVE_DIR" "$OUT_DIR" "$LOG_DIR"
+
+python -u -m training.train \
+    --config configs/resnet50.local.yaml \
+    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
+    --save_dir "$SAVE_DIR" \
+    --outputs_dir "$OUT_DIR" \
+    2>&1 | tee "$LOG_DIR/srun-resnet50-$RUN_ID.log"
+```
+
+**slurm (sbatch) background run examples:**
+```bash
+# Submit from repo root (recommended)
+cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
+sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_resnet50.slurm
+sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_vit_b16.slurm
+
+# If submitting from another directory, pass PROJECT_ROOT explicitly
+sbatch --export=ALL,ENV_NAME=ds5500-aigi,PROJECT_ROOT=/home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images \
+    /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/slurm/train_resnet50.slurm
+```
+
+Troubleshooting (`ModuleNotFoundError: No module named 'training'`):
+- Cause: running `python -m training.train` outside the repo root.
+- Fix: `cd` to this repository root before running, or use the script path directly:
+
+```bash
+/scratch/$USER/envs/ds5500-aigi/bin/python \
+    /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/training/train.py \
+    --config /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/configs/resnet50.local.yaml
+```
+
+Check status and logs:
+```bash
+squeue -u $USER
+sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
+tail -f /scratch/$USER/DS5500_Data_Capstone/aigi_logs/<job-name>-<jobid>.out
+```
 
 ### 1. Install dependencies
 

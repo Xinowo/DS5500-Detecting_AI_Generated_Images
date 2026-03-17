@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data.dataset    import prepare_splits, get_dataloaders
 from models          import build_model
-from training.trainer import Trainer
+from trainer import Trainer
 from visualization.visualize import plot_training_curves, plot_confusion_matrix, plot_roc_curve
 
 

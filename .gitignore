@@ -7,7 +7,7 @@ docs/
 checkpoints/
 
 # Training & evaluation outputs
-outputs/
+outputs/ # This can include metrics (training, validation history), figures etc.
 logs/
 
 # Local configs (machine-specific paths)
