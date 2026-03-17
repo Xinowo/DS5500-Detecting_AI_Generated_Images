@@ -28,6 +28,17 @@ sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_resnet50.slurm
 sbatch --export=ALL,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/vit_b16.local.yaml slurm/train_vit_b16.slurm
 ```
 
+## Interactive sessions
+
+When running on a compute node interactively (not via `sbatch`), set `PYTHONPATH`
+manually so the local packages can be found regardless of your working directory:
+
+```bash
+cd /path/to/DS5500-Detecting_AI_Generated_Images
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+python -m training.train --config configs/resnet50.yaml
+```
+
 If needed, you can also override the module and project root:
 
 ```bash

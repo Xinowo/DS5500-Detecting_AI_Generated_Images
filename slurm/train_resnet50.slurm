@@ -38,8 +38,12 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 nvidia-smi
 python -c "import torch; print('torch_cuda_available=', torch.cuda.is_available(), 'device_count=', torch.cuda.device_count(), 'device0=', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'N/A')"
 
-# Move to repo root.
+# Move to repo root and ensure it is on PYTHONPATH.
+# (Required so that `python -m training.train` can locate the local packages
+# regardless of the working directory at job submission time.)
 cd "$PROJECT_ROOT"
+export PYTHONPATH="$PROJECT_ROOT${PYTHONPATH:+:$PYTHONPATH}"
+echo "PYTHONPATH=$PYTHONPATH"
 
 # Per-run directory to avoid overwriting artifacts.
 RUN_ID=$(date +%Y%m%d_%H%M%S)

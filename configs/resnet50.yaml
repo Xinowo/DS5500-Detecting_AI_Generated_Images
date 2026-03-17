@@ -13,7 +13,7 @@ freeze_backbone:        true
 unfreeze_last_n_blocks: 0   # 0=head only | 1=layer4 | 2=layer3+4 | ...
 
 # ── Training ──────────────────────────────────────────────────────────────────
-epochs:          20
+epochs:          1
 batch_size:      64
 lr:              3.0e-4   # head learning rate
 backbone_lr:     1.0e-5   # active when unfreeze_last_n_blocks > 0

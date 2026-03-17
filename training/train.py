@@ -31,12 +31,15 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-# Add project root to sys.path so local modules resolve on Colab
+# Ensure project root is on sys.path.
+# Needed when this file is executed directly (e.g. `python training/train.py`)
+# or inside Colab/notebooks.  Has no effect when invoked correctly via
+# `python -m training.train` from the project root (CWD is already on sys.path).
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from data.dataset    import prepare_splits, get_dataloaders
 from models          import build_model
-from trainer import Trainer
+from training.trainer import Trainer
 from visualization.visualize import plot_training_curves, plot_confusion_matrix, plot_roc_curve
 
 
@@ -203,7 +206,6 @@ def main() -> None:
     # Visualize
     # ------------------------------------------------------------------
     import json
-    import pandas as pd
     ts       = trainer.timestamp
     fig_dir  = Path(cfg.outputs_dir) / "figures"
     ckpt_dir = Path(cfg.save_dir)
@@ -218,7 +220,6 @@ def main() -> None:
 
     with open(ckpt_dir / f"test_metrics_{ts}.json") as f:
         metrics = json.load(f)
-    import numpy as np
     plot_confusion_matrix(
         cm        = np.array(metrics["confusion_matrix"]),
         save_path = fig_dir / f"{ts}_{cfg.run_name}_confusion_matrix.png",
