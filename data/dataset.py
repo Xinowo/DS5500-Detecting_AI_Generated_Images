@@ -219,9 +219,11 @@ def get_dataloaders(
     """
     root = Path(data_root)
 
-    # Auto-detect per-split sub-directory layout
+    # Auto-detect per-split sub-directory layout (supports both "validation" and "val")
     train_root = root / "train"      if (root / "train").is_dir()      else root
-    val_root   = root / "validation" if (root / "validation").is_dir() else root
+    val_root   = (root / "validation" if (root / "validation").is_dir()
+                  else root / "val"   if (root / "val").is_dir()
+                  else root)
     test_root  = root / "test"       if (root / "test").is_dir()       else root
 
     print(f"[DataLoader] train images : {train_root}")
