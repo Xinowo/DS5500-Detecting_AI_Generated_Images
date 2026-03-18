@@ -13,7 +13,7 @@ set -euo pipefail
 # ------------------------------
 # User-configurable defaults
 # Override at submit time, e.g.:
-# sbatch --export=ALL,ENV_NAME=myenv,CONFIG_PATH=configs/vit_b16.local.yaml slurm/train_vit_b16.slurm
+# sbatch --export=ALL,ENV_NAME=myenv,CONFIG_PATH=configs/vit_b16.yaml slurm/train_vit_b16.slurm
 # ------------------------------
 ENV_NAME=${ENV_NAME:-ds5500-aigi}
 ANACONDA_MODULE=${ANACONDA_MODULE:-anaconda3/2024.06}

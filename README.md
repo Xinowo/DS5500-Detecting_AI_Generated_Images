@@ -39,8 +39,7 @@ DS5500-Detecting_AI_Generated_Images/
 ├── configs/                        # YAML hyperparameter configs
 │   ├── resnet50.yaml
 │   ├── vit_b16.yaml
-│   ├── smoke_test.yaml             # CPU / quick sanity-check config
-│   └── resnet50.local.yaml.example # Template for machine-specific path overrides
+│   └── smoke_test.yaml             # CPU / quick sanity-check config
 │
 ├── data/
 │   ├── dataset.py                  # AIDataset, transforms, split logic, DataLoader factory

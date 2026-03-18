@@ -112,14 +112,6 @@ for LR in 1e-3 3e-4 1e-4; do
 done
 ```
 
-### Using a local config file instead
-
-```bash
-cp configs/resnet50.local.yaml.example configs/resnet50.local.yaml
-vim configs/resnet50.local.yaml   # set absolute paths for your scratch space
-python -m training.train --config configs/resnet50.local.yaml
-```
-
 ### All overridable CLI flags
 
 | Flag | Type | Description |

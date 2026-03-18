@@ -71,10 +71,9 @@ else
       if [ "$GRID_MODEL" = "resnet50" ] || [ "$GRID_MODEL" = "both" ]; then
         RUN_NAME="resnet50-${TAG}"
         EXTRA="--epochs $EPOCHS --lr $LR --batch_size $BS --run_name $RUN_NAME"
-        JID=$(sbatch $COMMON \
+        JID=$(EXTRA_ARGS="$EXTRA" sbatch \
           --job-name="$RUN_NAME" \
-          --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,\
-CONFIG_PATH=configs/resnet50.yaml,EXTRA_ARGS="$EXTRA" \
+          --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/resnet50.yaml \
           slurm/train_resnet50.slurm | awk '{print $NF}')
         echo "  ResNet-50  $TAG  → job $JID"
         COUNT=$((COUNT + 1))
@@ -83,10 +82,9 @@ CONFIG_PATH=configs/resnet50.yaml,EXTRA_ARGS="$EXTRA" \
       if [ "$GRID_MODEL" = "vit" ] || [ "$GRID_MODEL" = "both" ]; then
         RUN_NAME="vit-${TAG}"
         EXTRA="--epochs $EPOCHS --lr $LR --batch_size $BS --run_name $RUN_NAME"
-        JID=$(sbatch $COMMON \
+        JID=$(EXTRA_ARGS="$EXTRA" sbatch \
           --job-name="$RUN_NAME" \
-          --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,\
-CONFIG_PATH=configs/vit_b16.yaml,EXTRA_ARGS="$EXTRA" \
+          --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/vit_b16.yaml \
           slurm/train_vit_b16.slurm | awk '{print $NF}')
         echo "  ViT-B/16   $TAG  → job $JID"
         COUNT=$((COUNT + 1))
