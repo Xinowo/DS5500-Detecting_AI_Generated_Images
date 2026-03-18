@@ -162,6 +162,8 @@ done
 | `--patience` | int | Early-stopping patience |
 | `--run_name` | str | Name prefix for output files |
 | `--unfreeze_last_n_blocks` | int | Backbone blocks to unfreeze (0 = linear probe) |
+| `--eta_min` | float | LR floor for CosineAnnealingLR (default `1e-5`; prevents decay to zero) |
+| `--warmup_epochs` | int | Epochs to hold LR constant before cosine decay starts (default `0`) |
 | `--num_workers` | int | DataLoader workers (1 on HPC, 0 for CPU-only) |
 | `--data_root` | str | Root folder containing train/val/test sub-dirs |
 | `--save_dir` | str | Checkpoints directory |

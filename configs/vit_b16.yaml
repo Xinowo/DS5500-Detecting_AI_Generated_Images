@@ -22,6 +22,8 @@ label_smoothing: 0.1
 patience:        5
 grad_clip:       1.0
 use_amp:         true
+eta_min:         1.0e-5   # lr floor for CosineAnnealingLR (0 = decay to zero)
+warmup_epochs:   0        # epochs to hold lr constant before cosine decay begins
 
 # ── Misc ──────────────────────────────────────────────────────────────────────
 run_name:    "vit-b16-5k-linear-probe"

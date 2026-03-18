@@ -122,6 +122,8 @@ def main() -> None:
     parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
     parser.add_argument("--run_name",    default=None,              help="Override run_name.")
     parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
+    parser.add_argument("--eta_min",       default=None, type=float, help="Override eta_min (lr floor for CosineAnnealingLR).")
+    parser.add_argument("--warmup_epochs", default=None, type=int,   help="Override warmup_epochs (epochs before cosine decay starts).")
     parser.add_argument("--checkpoint", default=None, help="Path to a .pth checkpoint to warm-start from (e.g. Stage 1 best model).")
     args = parser.parse_args()
 
@@ -142,6 +144,8 @@ def main() -> None:
     if args.patience    is not None: cfg.patience    = args.patience
     if args.run_name:                cfg.run_name    = args.run_name
     if args.unfreeze_last_n_blocks is not None: cfg.unfreeze_last_n_blocks = args.unfreeze_last_n_blocks
+    if args.eta_min        is not None: cfg.eta_min        = args.eta_min
+    if args.warmup_epochs  is not None: cfg.warmup_epochs  = args.warmup_epochs
 
     seed_everything(cfg.seed)
 
