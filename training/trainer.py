@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.cuda.amp import GradScaler, autocast
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR, ConstantLR, SequentialLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from sklearn.metrics import (
     classification_report,
@@ -61,11 +61,7 @@ class Trainer:
         eta_min      = getattr(cfg, 'eta_min', 1e-6)
         warmup       = getattr(cfg, 'warmup_epochs', 0)
         cosine_steps = max(1, cfg.epochs - warmup)
-        cosine = CosineAnnealingLR(self.optimizer, T_max=cosine_steps, eta_min=eta_min)
-        if warmup > 0:
-            warmup_sched = ConstantLR(self.optimizer, factor=1.0, total_iters=warmup)
-            return SequentialLR(self.optimizer, schedulers=[warmup_sched, cosine], milestones=[warmup])
-        return cosine
+        return CosineAnnealingLR(self.optimizer, T_max=cosine_steps, eta_min=eta_min)
 
     # ------------------------------------------------------------------
     # Public API
@@ -127,7 +123,8 @@ class Trainer:
             })
             log_file.flush()
 
-            self.scheduler.step()
+            if epoch > getattr(cfg, 'warmup_epochs', 0):
+                self.scheduler.step()
 
             if val_loss < best_val_loss:
                 best_val_loss       = val_loss

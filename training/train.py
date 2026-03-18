@@ -71,6 +71,8 @@ class Config:
     patience:        int   = 5
     grad_clip:       float = 1.0
     use_amp:         bool  = True
+    eta_min:         float = 1e-5
+    warmup_epochs:   int   = 0
 
     # Logging
     run_name: str        = "run"
