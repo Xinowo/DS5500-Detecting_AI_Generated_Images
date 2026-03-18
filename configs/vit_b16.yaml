@@ -5,7 +5,7 @@
 # ── Data ──────────────────────────────────────────────────────────────────────
 data_root:   "data/sampled_data_5k"
 splits_dir:  "data/splits"
-num_workers: 2
+num_workers: 1
 
 # ── Model ─────────────────────────────────────────────────────────────────────
 model_name:             "vit_b_16"

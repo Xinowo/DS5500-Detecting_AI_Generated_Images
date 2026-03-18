@@ -18,7 +18,7 @@ set -euo pipefail
 ENV_NAME=${ENV_NAME:-ds5500-aigi}
 ANACONDA_MODULE=${ANACONDA_MODULE:-anaconda3/2024.06}
 PROJECT_ROOT=${PROJECT_ROOT:-$HOME/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images}
-CONFIG_PATH=${CONFIG_PATH:-configs/vit_b16.local.yaml}
+CONFIG_PATH=${CONFIG_PATH:-configs/vit_b16.yaml}
 SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 DATA_ROOT=${DATA_ROOT:-/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k}
 NUM_WORKERS=${NUM_WORKERS:-1}

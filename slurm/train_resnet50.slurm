@@ -13,12 +13,12 @@ set -euo pipefail
 # ------------------------------
 # User-configurable defaults
 # Override at submit time, e.g.:
-# sbatch --export=ALL,ENV_NAME=myenv,CONFIG_PATH=configs/resnet50.local.yaml slurm/train_resnet50.slurm
+# sbatch --export=ALL,ENV_NAME=myenv,CONFIG_PATH=configs/resnet50.yaml slurm/train_resnet50.slurm
 # ------------------------------
 ENV_NAME=${ENV_NAME:-ds5500-aigi}
 ANACONDA_MODULE=${ANACONDA_MODULE:-anaconda3/2024.06}
 PROJECT_ROOT=${PROJECT_ROOT:-$HOME/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images}
-CONFIG_PATH=${CONFIG_PATH:-configs/resnet50.local.yaml}
+CONFIG_PATH=${CONFIG_PATH:-configs/resnet50.yaml}
 SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 DATA_ROOT=${DATA_ROOT:-/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k}
 NUM_WORKERS=${NUM_WORKERS:-1}
