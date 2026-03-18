@@ -30,53 +30,79 @@ Objectives:
 Both runs use a frozen backbone (linear probe).  Fine-tuning is supported via
 `unfreeze_last_n_blocks` in the config.
 
-<!-- ---
+---
 
 ## Project Structure
 
 ```
 DS5500-Detecting_AI_Generated_Images/
-├── configs/                  # YAML hyperparameter configs (one per model)
+├── configs/                        # YAML hyperparameter configs
 │   ├── resnet50.yaml
 │   ├── vit_b16.yaml
-│   └── smoke_test.yaml       # CPU / quick sanity-check config
+│   ├── smoke_test.yaml             # CPU / quick sanity-check config
+│   └── resnet50.local.yaml.example # Template for machine-specific path overrides
 │
 ├── data/
-│   ├── dataset.py            # AIDataset, transforms, split logic, DataLoader factory
-│   ├── sampled_data_5k/      # 5 k-image local subset
-│   │   ├── train/
-│   │   ├── validation/
-│   │   └── test/
-│   └── splits/               # Pre-computed train/val/test split CSVs (gitignored)
-│
-├── docs/
-│   ├── workflow.md           # End-to-end pipeline walkthrough
-│   └── code_walk_requirements.md
+│   ├── dataset.py                  # AIDataset, transforms, split logic, DataLoader factory
+│   └── splits/                     # Pre-computed train/val/test split CSVs
+│       ├── df_train.csv
+│       ├── df_val.csv
+│       └── df_test.csv
 │
 ├── models/
-│   ├── resnet.py             # ResNet-50 builder
-│   ├── vit.py                # ViT-B/16 builder
-│   └── model_factory.py      # build_model() dispatcher
+│   ├── resnet.py                   # ResNet-50 builder
+│   ├── vit.py                      # ViT-B/16 builder
+│   └── model_factory.py            # build_model() dispatcher
 │
 ├── training/
-│   ├── train.py              # CLI entry-point
-│   └── trainer.py            # Trainer class (fit / evaluate)
+│   ├── train.py                    # CLI entry-point
+│   └── trainer.py                  # Trainer class (fit / evaluate)
 │
 ├── visualization/
-│   └── visualize.py          # Confusion matrix, ROC curve, training curve plots
+│   └── visualize.py                # Confusion matrix, ROC curve, training curve plots
 │
-├── notebooks/                # Google Colab demo notebooks (full dataset)
+├── notebooks/                      # Google Colab demo notebooks (full dataset)
 │   ├── AIGI-Detection-ResNet50.ipynb
 │   └── AIGI-Detection_ViT.ipynb
 │
-├── checkpoints/              # Saved model weights (gitignored)
-├── outputs/                  # Figures and metric JSON files (gitignored)
-│   ├── figures/
-│   └── metrics/
+├── slurm/                          # HPC job scripts (see slurm/README.md)
+│   ├── train_resnet50.slurm
+│   ├── train_vit_b16.slurm
+│   ├── submit_all.sh
+│   └── README.md
 │
 ├── requirements.txt
 └── .gitignore
-``` -->
+```
+
+> **Note:** The folders below are gitignored and not pushed to the repository.
+> They must be created locally or on the cluster before training.
+
+### Local-only folders (gitignored)
+
+```
+data/sampled_data_5k/           # 5 k-image working subset (download from Kaggle or shared drive)
+│   ├── train/                  # 3,000 images
+│   ├── validation/             # 1,000 images
+│   └── test/                   # 1,000 images
+│
+checkpoints/                    # Saved model weights (created automatically during training)
+│   └── <model>/
+│       ├── best_model_<timestamp>.pth
+│       ├── config.yaml
+│       ├── test_metrics_<timestamp>.json
+│       └── test_preds_<timestamp>.npz
+│
+outputs/                        # Training metrics and figures (created automatically)
+│   ├── metrics/
+│   │   └── <run_name>_<timestamp>_history.csv
+│   └── figures/
+│       ├── <timestamp>_<run_name>_training_curves.png
+│       ├── <timestamp>_<run_name>_confusion_matrix.png
+│       └── <timestamp>_<run_name>_roc_curve.png
+```
+
+On the **HPC cluster**, `checkpoints/` and `outputs/` are written to `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` instead (see [slurm/README.md](slurm/README.md)).
 
 ---
 
@@ -113,91 +139,23 @@ The original test set (`test_data_v2`) has no labels and is not used.
 
 ### HPC / Cluster Setup
 
-If you're running on an HPC cluster with separate `/scratch/` storage:
-
-**Option 1: Use CLI overrides** (recommended for quick runs)
-```bash
-python -m training.train \
-    --config    configs/resnet50.yaml \
-    --data_root /scratch/username/DS5500_Data_Capstone/data/sampled_data_5k \
-    --save_dir  /scratch/username/DS5500_Data_Capstone/checkpoints/resnet50
-```
-
-**Option 2: Create a local config file** (recommended for repeated experiments)
-```bash
-# Copy the example template
-cp configs/resnet50.local.yaml.example configs/resnet50.local.yaml
-
-# Edit paths to match your scratch directory
-vim configs/resnet50.local.yaml
-
-# Run with your local config
-python -m training.train --config configs/resnet50.local.yaml
-```
-
-**Storage strategy:**
-- **`/scratch/`**: Large files (data, checkpoints, outputs) — high-speed but may be purged periodically
-- **`/home/`**: Code repo and final results summary — persistent but limited quota
-- **Training history CSVs**: Save to `/scratch/outputs/` during training, then copy key experiments to `/home/` for long-term archiving
-
-**Current cluster path template (per-user):**
-- **Training data root**: `/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k`
-- **Split CSVs**: `data/splits/` (repository-relative)
-- **Local non-Slurm outputs** (from `*.local.yaml`):
-    - Checkpoints: `checkpoints/<model>/` (or override to `/scratch/$USER/...`)
-    - Metrics/Figures: `outputs/` (or override to `/scratch/$USER/...`)
-- **Slurm outputs** (from `slurm/train_*.slurm`):
-    - Run artifacts: `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/`
-    - Slurm logs: `/scratch/$USER/DS5500_Data_Capstone/aigi_logs/`
-
-**srun quick run example (no username hardcode):**
+**Interactive (online) — `srun`:**
 ```bash
 srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
-SCRATCH_BASE=/scratch/$USER/DS5500_Data_Capstone
-RUN_ID=$(date +%Y%m%d_%H%M%S)
-BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
-SAVE_DIR=$BASE_DIR/checkpoints
-OUT_DIR=$BASE_DIR/outputs
-LOG_DIR=$SCRATCH_BASE/aigi_logs
-mkdir -p "$SAVE_DIR" "$OUT_DIR" "$LOG_DIR"
-
-python -u -m training.train \
-    --config configs/resnet50.local.yaml \
-    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
-    --num_workers 1 \
-    --save_dir "$SAVE_DIR" \
-    --outputs_dir "$OUT_DIR" \
-    2>&1 | tee "$LOG_DIR/srun-resnet50-$RUN_ID.log"
-```
-
-**slurm (sbatch) background run examples:**
-```bash
-# Submit from repo root (recommended)
 cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
-sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_resnet50.slurm
-sbatch --export=ALL,ENV_NAME=ds5500-aigi slurm/train_vit_b16.slurm
-
-# If submitting from another directory, pass PROJECT_ROOT explicitly
-sbatch --export=ALL,ENV_NAME=ds5500-aigi,PROJECT_ROOT=/home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images \
-    /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/slurm/train_resnet50.slurm
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+python -m training.train --config configs/vit_b16.yaml \
+    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
+    --num_workers 1
 ```
 
-Troubleshooting (`ModuleNotFoundError: No module named 'training'`):
-- Cause: running `python -m training.train` outside the repo root.
-- Fix: `cd` to this repository root before running, or use the script path directly:
-
+**Background (offline) — `sbatch`:**
 ```bash
-/scratch/$USER/envs/ds5500-aigi/bin/python \
-    /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/training/train.py \
-    --config /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images/configs/resnet50.local.yaml
+cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
+sbatch slurm/train_vit_b16.slurm
 ```
 
-Check status and logs:
-```bash
-squeue -u $USER
-sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
-tail -f /scratch/$USER/DS5500_Data_Capstone/aigi_logs/<job-name>-<jobid>.out
-```
+For hyperparameter overrides, grid search, and artifact paths see [slurm/README.md](slurm/README.md).
 
 ### 1. Install dependencies
 
@@ -297,8 +255,6 @@ Add new models by registering them in `models/model_factory.py`.
 - Modular codebase with YAML configs and CLI training scripts
 
 **Next Steps:**
-- Scale training to the full 79,950-image dataset
-- Fine-tune backbone layers (`unfreeze_last_n_blocks > 0`) for both architectures
-- Apply stronger augmentations (`albumentations`) to improve generalisation
-- Perform error analysis on misclassified test images
 - Ensemble predictions from multiple models
+- Web demo for users to upload images and get AI-generated vs. real predictions
+- Explore interpretability methods (e.g. Grad-CAM) to visualise model attention

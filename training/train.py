@@ -113,7 +113,16 @@ def main() -> None:
     parser.add_argument("--csv_path",    default=None,  help="Override csv_path from config.")
     parser.add_argument("--save_dir",    default=None,  help="Override save_dir from config.")
     parser.add_argument("--outputs_dir", default=None,  help="Override outputs_dir from config.")
-    parser.add_argument("--num_workers", default=None,  type=int, help="Override num_workers from config.")
+    parser.add_argument("--num_workers", default=None,  type=int,   help="Override num_workers from config.")
+    # Hyperparameter overrides
+    parser.add_argument("--epochs",      default=None,  type=int,   help="Override epochs.")
+    parser.add_argument("--batch_size",  default=None,  type=int,   help="Override batch_size.")
+    parser.add_argument("--lr",          default=None,  type=float, help="Override lr.")
+    parser.add_argument("--backbone_lr", default=None,  type=float, help="Override backbone_lr.")
+    parser.add_argument("--weight_decay",default=None,  type=float, help="Override weight_decay.")
+    parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
+    parser.add_argument("--run_name",    default=None,              help="Override run_name.")
+    parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -125,6 +134,14 @@ def main() -> None:
     if args.save_dir:               cfg.save_dir    = args.save_dir
     if args.outputs_dir:            cfg.outputs_dir = args.outputs_dir
     if args.num_workers is not None: cfg.num_workers = args.num_workers
+    if args.epochs      is not None: cfg.epochs      = args.epochs
+    if args.batch_size  is not None: cfg.batch_size  = args.batch_size
+    if args.lr          is not None: cfg.lr          = args.lr
+    if args.backbone_lr is not None: cfg.backbone_lr = args.backbone_lr
+    if args.weight_decay is not None: cfg.weight_decay = args.weight_decay
+    if args.patience    is not None: cfg.patience    = args.patience
+    if args.run_name:                cfg.run_name    = args.run_name
+    if args.unfreeze_last_n_blocks is not None: cfg.unfreeze_last_n_blocks = args.unfreeze_last_n_blocks
 
     seed_everything(cfg.seed)
 

@@ -22,6 +22,7 @@ CONFIG_PATH=${CONFIG_PATH:-configs/vit_b16.local.yaml}
 SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 DATA_ROOT=${DATA_ROOT:-/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k}
 NUM_WORKERS=${NUM_WORKERS:-1}
+EXTRA_ARGS=${EXTRA_ARGS:-}   # e.g. "--epochs 5 --lr 1e-4 --batch_size 32"
 
 # Load conda from module system for this batch shell.
 module purge
@@ -64,6 +65,7 @@ python -u -m training.train \
   --num_workers "$NUM_WORKERS" \
   --save_dir "$SAVE_DIR" \
   --outputs_dir "$OUT_DIR" \
+  $EXTRA_ARGS \
   2>&1 | tee "$OUT_DIR/train_console.log"
 
 echo "Training finished."
