@@ -87,6 +87,7 @@ class Trainer:
 
         best_val_loss    = float("inf")
         patience_counter = 0
+        self.best_ckpt_path = None
 
         for epoch in range(1, cfg.epochs + 1):
             print(f"\nEpoch {epoch}/{cfg.epochs}")

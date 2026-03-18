@@ -133,28 +133,9 @@ The original test set (`test_data_v2`) has no labels and is not used.
 ## How to Run
 
 > **Environment note:**  
-> The Jupyter notebooks in `notebooks/` were developed and run on **Google Colab** (full 79,950-image dataset, GPU).  
-> The `training/` scripts can be run **locally** using the pre-sampled 5,000-image subset in `data/sampled_data_5k/`.
-
-### HPC / Cluster Setup
-
-**Interactive (online) — `srun`:**
-```bash
-srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
-cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
-export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
-python -m training.train --config configs/vit_b16.yaml \
-    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
-    --num_workers 1
-```
-
-**Background (offline) — `sbatch`:**
-```bash
-cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
-sbatch slurm/train_vit_b16.slurm
-```
-
-For hyperparameter overrides, grid search, and artifact paths see [slurm/README.md](slurm/README.md).
+> - **Local**: `training/` scripts run against the pre-sampled 5,000-image subset in `data/sampled_data_5k/`.  
+> - **HPC cluster**: SLURM scripts in `slurm/` handle environment setup, scratch-storage paths, and logging automatically.  
+> - **Google Colab**: notebooks in `notebooks/` use the full 79,950-image dataset with a GPU runtime.
 
 ### 1. Install dependencies
 
@@ -177,10 +158,30 @@ This runs 2 epochs with `batch_size=8`, `use_amp=false`, and `num_workers=0` —
 Split CSVs are already present in `data/splits/`.  Run directly from the repo root:
 
 ```bash
-python -m training.train --config configs/resnet50.yaml
+python -m training.train --config configs/vit_b16.yaml
 ```
 
-### 4. Google Colab — notebooks or full-dataset training
+### 4. HPC / Cluster training
+
+**Interactive (online) — `srun`:**
+```bash
+srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
+cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+python -m training.train --config configs/vit_b16.yaml \
+    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
+    --num_workers 1
+```
+
+**Background (offline) — `sbatch`:**
+```bash
+cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
+sbatch slurm/train_vit_b16.slurm
+```
+
+For hyperparameter overrides, grid search, and artifact paths see [slurm/README.md](slurm/README.md).
+
+### 5. Google Colab — notebooks or full-dataset training
 
 Open a notebook from `notebooks/` directly in Colab, or run the CLI with the full dataset by mounting Google Drive and passing paths as CLI flags:
 
@@ -192,7 +193,7 @@ python -m training.train \
     --save_dir  /content/drive/MyDrive/checkpoints/resnet50
 ```
 
-### 5. Outputs
+### 6. Outputs
 
 After training completes, the following files are saved automatically:
 

@@ -41,12 +41,21 @@ if [ "$GRID_SEARCH" != "1" ]; then
     # --dependency=afterok:$JOB1 \   # ← uncomment to make sequential
   echo "Submitted ViT-B/16 linear probe   → job $JOB2"
 
-  # Job 3 (example): ResNet-50 fine-tune after Job 1 succeeds
-  # JOB3=$(sbatch $COMMON \
-  #   --dependency=afterok:$JOB1 \
-  #   --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/resnet50_ft.yaml \
-  #   slurm/train_resnet50.slurm | awk '{print $NF}')
-  # echo "Submitted ResNet-50 fine-tune      → job $JOB3 (after $JOB1)"
+  # ----------------------------------------------------------------
+  # Stage 2: ViT fine-tune — runs after Stage 1, warm-starts from its
+  # checkpoint via the stable 'latest_vit' symlink.
+  # Uncomment and adjust hyperparameters when ready.
+  # ----------------------------------------------------------------
+  # SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
+  # STAGE1_CKPT=$(ls -t $SCRATCH_BASE/aigi_runs/latest_vit/checkpoints/best_model_*.pth 2>/dev/null | head -1)
+  # JOB_FT=$(CHECKPOINT="$STAGE1_CKPT" \
+  #   EXTRA_ARGS="--unfreeze_last_n_blocks 2 --backbone_lr 1e-5 --lr 1e-4 --run_name vit-b16-ft" \
+  #   sbatch \
+  #     --job-name=aigi-vit-ft \
+  #     --dependency=afterok:$JOB2 \
+  #     --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/vit_b16.yaml \
+  #     slurm/train_vit_b16.slurm | awk '{print $NF}')
+  # echo "Submitted ViT-B/16 fine-tune      → job $JOB_FT (after $JOB2, warm-start from Stage 1)"
 
 # ==================================================================
 # GRID SEARCH MODE
@@ -55,8 +64,8 @@ if [ "$GRID_SEARCH" != "1" ]; then
 else
 
   # ---- define the search space ----
-  LR_VALUES=(1e-3 3e-4 1e-4)
-  BATCH_VALUES=(32 64)
+  LR_VALUES=(1e-2 1e-3 1e-4)
+  BATCH_VALUES=64
   EPOCHS=20                      # fixed for all sweep jobs
   # ---------------------------------
 

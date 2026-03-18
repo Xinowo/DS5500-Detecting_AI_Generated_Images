@@ -45,6 +45,7 @@ bash slurm/submit_all.sh
 
 ### `srun` — interactive session
 
+**Stage 1 (linear probe):**
 ```bash
 srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
 cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
@@ -56,12 +57,48 @@ BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
 mkdir -p "$BASE_DIR/checkpoints" "$BASE_DIR/outputs" "$SCRATCH_BASE/aigi_logs"
 
 python -u -m training.train \
-    --config configs/resnet50.yaml \
+    --config configs/vit_b16.yaml \
     --data_root $SCRATCH_BASE/data/sampled_data_5k \
     --num_workers 1 \
     --save_dir "$BASE_DIR/checkpoints" \
     --outputs_dir "$BASE_DIR/outputs" \
-    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-resnet50-$RUN_ID.log"
+    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-stage1-$RUN_ID.log"
+```
+
+After Stage 1 finishes the script writes a `latest_vit` symlink pointing to that run's directory.
+
+**Stage 2 (fine-tune, warm-start from Stage 1):**
+```bash
+srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
+cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
+export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
+SCRATCH_BASE=/scratch/$USER/DS5500_Data_Capstone
+RUN_ID=$(date +%Y%m%d_%H%M%S)
+BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
+mkdir -p "$BASE_DIR/checkpoints" "$BASE_DIR/outputs" "$SCRATCH_BASE/aigi_logs"
+
+# Pick up the best checkpoint from the most recent Stage 1 run
+STAGE1_CKPT=$(ls -t $SCRATCH_BASE/aigi_runs/latest_vit/checkpoints/best_model_*.pth | head -1)
+echo "Warm-starting from: $STAGE1_CKPT"
+
+python -u -m training.train \
+    --config configs/vit_b16.yaml \
+    --checkpoint "$STAGE1_CKPT" \
+    --unfreeze_last_n_blocks 2 \
+    --backbone_lr 1e-5 \
+    --lr 1e-4 \
+    --run_name vit-b16-ft \
+    --data_root $SCRATCH_BASE/data/sampled_data_5k \
+    --num_workers 1 \
+    --save_dir "$BASE_DIR/checkpoints" \
+    --outputs_dir "$BASE_DIR/outputs" \
+    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-stage2-$RUN_ID.log"
+```
+
+To use a specific checkpoint instead of `latest_vit`, replace the `ls` line with:
+```bash
+STAGE1_CKPT=$SCRATCH_BASE/aigi_runs/<RUN_ID>/checkpoints/best_model_<timestamp>.pth
 ```
 
 ---

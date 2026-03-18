@@ -23,6 +23,7 @@ SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
 DATA_ROOT=${DATA_ROOT:-/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k}
 NUM_WORKERS=${NUM_WORKERS:-1}
 EXTRA_ARGS=${EXTRA_ARGS:-}   # e.g. "--epochs 5 --lr 1e-4 --batch_size 32"
+CHECKPOINT=${CHECKPOINT:-}  # optional: path to a .pth file for warm-start (Stage 2)
 
 # Load conda from module system for this batch shell.
 module purge
@@ -65,7 +66,12 @@ python -u -m training.train \
   --num_workers "$NUM_WORKERS" \
   --save_dir "$SAVE_DIR" \
   --outputs_dir "$OUT_DIR" \
+  ${CHECKPOINT:+--checkpoint "$CHECKPOINT"} \
   $EXTRA_ARGS \
   2>&1 | tee "$OUT_DIR/train_console.log"
+
+# Create / update a stable symlink so Stage 2 can find this run's artifacts.
+ln -sfn "$BASE_DIR" "$SCRATCH_BASE/aigi_runs/latest_vit"
+echo "Symlink updated: $SCRATCH_BASE/aigi_runs/latest_vit -> $BASE_DIR"
 
 echo "Training finished."

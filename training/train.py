@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import random
-import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -123,6 +122,7 @@ def main() -> None:
     parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
     parser.add_argument("--run_name",    default=None,              help="Override run_name.")
     parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
+    parser.add_argument("--checkpoint", default=None, help="Path to a .pth checkpoint to warm-start from (e.g. Stage 1 best model).")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -202,6 +202,11 @@ def main() -> None:
         unfreeze_last_n_blocks = cfg.unfreeze_last_n_blocks,
     )
 
+    if args.checkpoint:
+        state = torch.load(args.checkpoint, map_location=device)
+        model.load_state_dict(state)
+        print(f"[Checkpoint] Warm-started from {args.checkpoint}")
+
     criterion = lambda logits, targets: F.cross_entropy(
         logits, targets.long(), label_smoothing=cfg.label_smoothing
     )
@@ -210,8 +215,10 @@ def main() -> None:
     # Train
     # ------------------------------------------------------------------
     Path(cfg.save_dir).mkdir(parents=True, exist_ok=True)
-    shutil.copy(args.config, Path(cfg.save_dir) / "config.yaml")
-    print(f"[Config] Saved to {Path(cfg.save_dir) / 'config.yaml'}")
+    config_out = Path(cfg.save_dir) / "config.yaml"
+    with open(config_out, "w") as _f:
+        yaml.dump(vars(cfg), _f, default_flow_style=False, sort_keys=False)
+    print(f"[Config] Saved to {config_out}")
 
     trainer = Trainer(model=model, criterion=criterion, cfg=cfg, device=device)
     trainer.fit(train_loader, val_loader)
