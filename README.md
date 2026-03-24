@@ -22,10 +22,10 @@ Objectives:
 
 ## Results (5 k-sample baseline)
 
-| Model      | Test Accuracy | Test ROC AUC | Epochs |
-|------------|--------------|--------------|--------|
-| ResNet-50  | 90.20 %      | 0.9662       | 20     |
-| ViT-B/16   | 79.20 %      | 0.8692       | 5      |
+| Model      | Test Accuracy | Test ROC AUC | Epochs (early stop) | Training hardware |
+|------------|--------------|--------------|---------------------|-------------------|
+| ResNet-50  | 90.20 %      | 0.9662       | 20                  | Google Colab T4   |
+| ViT-B/16   | 85.90 %      | 0.9294       | 11                  | HPC cluster (V100-SXM2) |
 
 Both runs use a frozen backbone (linear probe).  Fine-tuning is supported via
 `unfreeze_last_n_blocks` in the config.
@@ -70,6 +70,7 @@ DS5500-Detecting_AI_Generated_Images/
 │   ├── submit_all.sh
 │   └── README.md
 │
+├── Final_Milestone_Report_Team_2.pdf
 ├── requirements.txt
 └── .gitignore
 ```
@@ -85,12 +86,16 @@ data/sampled_data_5k/           # 5 k-image working subset (download from Kaggle
 │   ├── validation/             # 1,000 images
 │   └── test/                   # 1,000 images
 │
-checkpoints/                    # Saved model weights (created automatically during training)
-│   └── <model>/
-│       ├── best_model_<timestamp>.pth
+checkpoints/                    # Local training artifacts (created automatically)
+│   ├── resnet50/
+│   │   ├── best_model_<timestamp>.pth
+│   │   ├── config.yaml
+│   │   ├── test_metrics_<timestamp>.json
+│   │   └── test_preds_<timestamp>.npz
+│   └── smoke_test/
+│       ├── best_model.pth
 │       ├── config.yaml
-│       ├── test_metrics_<timestamp>.json
-│       └── test_preds_<timestamp>.npz
+│       └── test_metrics.json
 │
 outputs/                        # Training metrics and figures (created automatically)
 │   ├── metrics/
@@ -99,9 +104,23 @@ outputs/                        # Training metrics and figures (created automati
 │       ├── <timestamp>_<run_name>_training_curves.png
 │       ├── <timestamp>_<run_name>_confusion_matrix.png
 │       └── <timestamp>_<run_name>_roc_curve.png
+│
+aigi_runs/                      # Downloaded HPC cluster run artifacts
+│   └── aigi_runs/
+│       ├── <RUN_ID>/           # e.g. 20260317_220724/ (ViT-B/16 linear-probe run)
+│       │   ├── checkpoints/
+│       │   │   ├── best_model_<timestamp>.pth
+│       │   │   ├── config.yaml
+│       │   │   ├── test_metrics_<timestamp>.json
+│       │   │   └── test_preds_<timestamp>.npz
+│       │   └── outputs/
+│       │       ├── metrics/<run_name>_<timestamp>_history.csv
+│       │       ├── figures/
+│       │       └── train_console.log
+│       └── latest_vit -> <RUN_ID>/  # symlink to most recent ViT run
 ```
 
-On the **HPC cluster**, `checkpoints/` and `outputs/` are written to `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` instead (see [slurm/README.md](slurm/README.md)).
+On the **HPC cluster**, artifacts are written to `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` and downloaded locally into `aigi_runs/` (see [slurm/README.md](slurm/README.md)).
 
 ---
 
@@ -238,11 +257,10 @@ Add new models by registering them in `models/model_factory.py`.
 
 ## Assumptions and Limitations
 
-- **Dataset size:** Experiments use a 5,000-image sample (6 % of the full dataset).  Results may not generalise to the full distribution.
+- **Dataset size:** Experiments use a 5,000-image sample (~6 % of the full dataset).  Results may not generalise to the full distribution.
 - **Class balance:** The 50/50 split is preserved in all sub-samples; results assume balanced evaluation.
-- **ViT training duration:** ViT-B/16 was trained for 5 epochs vs. 20 for ResNet-50; a direct comparison is premature.
+- **Hardware difference:** ResNet-50 was trained on Google Colab (Tesla T4); ViT-B/16 was trained on the Northeastern Discovery HPC cluster (V100-SXM2).  Direct timing comparisons are not meaningful.
 - **Backbone frozen:** Both models are evaluated in linear-probe mode only; full fine-tuning has not yet been tested.
-- **Hardware:** Training was performed on a Google Colab Tesla T4 GPU.  Results may differ on other hardware.
 - **No augmentation at inference:** Validation and test splits use deterministic center-crop transforms only.
 
 ---
@@ -251,10 +269,11 @@ Add new models by registering them in `models/model_factory.py`.
 
 **Completed:**
 - Data pipeline: sampling, stratified splits, DataLoaders with augmentation, split-CSV persistence
-- Linear-probe baseline: ResNet-50 (~90 % accuracy, 0.97 AUC) and ViT-B/16 (~79 % accuracy, 0.87 AUC)
-- Modular codebase with YAML configs and CLI training scripts
+- Linear-probe baseline: ResNet-50 (90.20 % accuracy, 0.9662 AUC, 20 epochs) on Google Colab
+- Linear-probe baseline: ViT-B/16 (85.90 % accuracy, 0.9294 AUC, 11 epochs) on HPC cluster
+- HPC SLURM job scripts with automatic artifact management and `latest_vit` symlink
+- Modular codebase with YAML configs, CLI training scripts, and full visualization pipeline
+- Initial milestone report draft (`docs/draft_final_milestone_report_natural_language.md`)
 
 **Next Steps:**
-- Ensemble predictions from multiple models
 - Web demo for users to upload images and get AI-generated vs. real predictions
-- Explore interpretability methods (e.g. Grad-CAM) to visualise model attention
