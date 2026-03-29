@@ -6,12 +6,14 @@ torch==2.2.2
 torchvision==0.17.2
 
 # Data & numerics
-numpy==1.26.4
-pandas==2.2.1
+numpy==1.26.4   # torch 2.2.2 requires numpy<2
+pandas==2.2.3
 scikit-learn==1.5.2
 
 # Images & vision
-pillow==10.2.0
+pillow==12.1.1
+opencv-python==4.9.0.80
+grad-cam==1.5.5
 
 # Training utilities
 tqdm==4.66.5
@@ -21,3 +23,4 @@ pyyaml==6.0.1
 # Jupyter / VS Code support
 jupyter==1.0.0
 ipykernel==6.28.0
+gradio==5.49.1

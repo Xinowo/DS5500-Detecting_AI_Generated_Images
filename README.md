@@ -254,7 +254,21 @@ python visualization/gradcam.py --image path/to/image.jpg --model both \
 
 ---
 
-### 7. Outputs
+### 7. Gradio Demo
+
+Requires both checkpoints to be present at their default paths (see above).
+
+```bash
+python demo/app.py
+```
+
+Gradio will print a local URL (e.g. `http://127.0.0.1:7860`). Open it in a browser, upload any image, and the app will show:
+- **Binary verdict + confidence** from ResNet-50 and ViT-B/16
+- **Grad-CAM heatmaps** highlighting where each model focuses
+
+---
+
+### 8. Outputs
 
 After training completes, the following files are saved automatically:
 
