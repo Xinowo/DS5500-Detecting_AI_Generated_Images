@@ -58,7 +58,8 @@ DS5500-Detecting_AI_Generated_Images/
 │   └── trainer.py                  # Trainer class (fit / evaluate)
 │
 ├── visualization/
-│   └── visualize.py                # Confusion matrix, ROC curve, training curve plots
+│   ├── visualize.py                # Confusion matrix, ROC curve, training curve plots
+│   └── gradcam.py                  # Grad-CAM overlays for ResNet-50 and ViT-B/16
 │
 ├── notebooks/                      # Google Colab demo notebooks (full dataset)
 │   ├── AIGI-Detection-ResNet50.ipynb
@@ -212,7 +213,48 @@ python -m training.train \
     --save_dir  /content/drive/MyDrive/checkpoints/resnet50
 ```
 
-### 6. Outputs
+### 6. Grad-CAM visualisation
+
+Requires the `grad-cam` package (`pip install grad-cam`).
+Checkpoints are loaded automatically from their default paths in `checkpoints/`.
+
+**Single image — both models side-by-side:**
+```bash
+python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg --model both
+```
+
+**Single image — one model, save figure:**
+```bash
+python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg \
+    --model resnet50 --save-dir outputs/gradcam/
+```
+
+**Whole folder — ViT-B/16 only, save all figures:**
+```bash
+python visualization/gradcam.py --folder data/sampled_data_5k/test/ \
+    --model vit --save-dir outputs/gradcam/
+```
+
+**Custom checkpoint paths:**
+```bash
+python visualization/gradcam.py --image path/to/image.jpg --model both \
+    --resnet-ckpt checkpoints/resnet50/best_model_resnet50.pth \
+    --vit-ckpt    checkpoints/vit_b16/best_model_20260317_220741.pth
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--image` / `--folder` | — | Single image or directory (mutually exclusive, one required) |
+| `--model` | `both` | `resnet50`, `vit`, or `both` |
+| `--resnet-ckpt` | `checkpoints/resnet50/best_model_resnet50.pth` | ResNet-50 checkpoint |
+| `--vit-ckpt` | `checkpoints/vit_b16/best_model_20260317_220741.pth` | ViT-B/16 checkpoint |
+| `--save-dir` | *(interactive)* | Directory to save PNG figures; omit to display interactively |
+| `--device` | *(auto)* | `cuda` or `cpu` |
+| `--image-size` | `224` | Resize target in pixels |
+
+---
+
+### 7. Outputs
 
 After training completes, the following files are saved automatically:
 

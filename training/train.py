@@ -268,6 +268,14 @@ def main() -> None:
 
     print(f"\nAll figures saved to {fig_dir}/")
 
+    # Explicitly release DataLoader worker processes and GPU memory so the
+    # SLURM job exits promptly instead of lingering with an idle GPU.
+    del train_loader, val_loader, test_loader
+    del trainer, model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    print("[Cleanup] GPU memory released. Job exiting.")
+
 
 if __name__ == "__main__":
     main()
