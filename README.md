@@ -48,6 +48,9 @@ DS5500-Detecting_AI_Generated_Images/
 │       ├── df_val.csv
 │       └── df_test.csv
 │
+├── demo/
+│   └── app.py                      # Gradio web demo (ResNet-50 + ViT + Grad-CAM)
+│
 ├── models/
 │   ├── resnet.py                   # ResNet-50 builder
 │   ├── vit.py                      # ViT-B/16 builder
@@ -57,13 +60,14 @@ DS5500-Detecting_AI_Generated_Images/
 │   ├── train.py                    # CLI entry-point
 │   └── trainer.py                  # Trainer class (fit / evaluate)
 │
-├── visualization/
+├── visualization/                  # Grad-CAM and training-curve tools (see visualization/README.md)
 │   ├── visualize.py                # Confusion matrix, ROC curve, training curve plots
 │   └── gradcam.py                  # Grad-CAM overlays for ResNet-50 and ViT-B/16
 │
-├── notebooks/                      # Google Colab demo notebooks (full dataset)
+├── notebooks/                      # Exploratory notebooks
 │   ├── AIGI-Detection-ResNet50.ipynb
-│   └── AIGI-Detection_ViT.ipynb
+│   ├── AIGI-Detection_ViT.ipynb
+│   └── GradCAM_workflow.ipynb
 │
 ├── slurm/                          # HPC job scripts (see slurm/README.md)
 │   ├── train_resnet50.slurm
@@ -76,52 +80,19 @@ DS5500-Detecting_AI_Generated_Images/
 └── .gitignore
 ```
 
-> **Note:** The folders below are gitignored and not pushed to the repository.
-> They must be created locally or on the cluster before training.
-
-### Local-only folders (gitignored)
+> **Note:** The following folders are gitignored and must be created locally before training.
 
 ```
-data/sampled_data_5k/           # 5 k-image working subset (download from Kaggle or shared drive)
-│   ├── train/                  # 3,000 images
-│   ├── validation/             # 1,000 images
-│   └── test/                   # 1,000 images
+data/sampled_data_5k/   # 5k-image working subset (download from Kaggle)
+│   ├── train/          # 3,000 images
+│   ├── validation/     # 1,000 images
+│   └── test/           # 1,000 images
 │
-checkpoints/                    # Local training artifacts (created automatically)
-│   ├── resnet50/
-│   │   ├── best_model_<timestamp>.pth
-│   │   ├── config.yaml
-│   │   ├── test_metrics_<timestamp>.json
-│   │   └── test_preds_<timestamp>.npz
-│   └── smoke_test/
-│       ├── best_model.pth
-│       ├── config.yaml
-│       └── test_metrics.json
-│
-outputs/                        # Training metrics and figures (created automatically)
-│   ├── metrics/
-│   │   └── <run_name>_<timestamp>_history.csv
-│   └── figures/
-│       ├── <timestamp>_<run_name>_training_curves.png
-│       ├── <timestamp>_<run_name>_confusion_matrix.png
-│       └── <timestamp>_<run_name>_roc_curve.png
-│
-aigi_runs/                      # Downloaded HPC cluster run artifacts
-│   └── aigi_runs/
-│       ├── <RUN_ID>/           # e.g. 20260317_220724/ (ViT-B/16 linear-probe run)
-│       │   ├── checkpoints/
-│       │   │   ├── best_model_<timestamp>.pth
-│       │   │   ├── config.yaml
-│       │   │   ├── test_metrics_<timestamp>.json
-│       │   │   └── test_preds_<timestamp>.npz
-│       │   └── outputs/
-│       │       ├── metrics/<run_name>_<timestamp>_history.csv
-│       │       ├── figures/
-│       │       └── train_console.log
-│       └── latest_vit -> <RUN_ID>/  # symlink to most recent ViT run
+checkpoints/            # Created automatically during training
+outputs/                # Created automatically during training
 ```
 
-On the **HPC cluster**, artifacts are written to `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` and downloaded locally into `aigi_runs/` (see [slurm/README.md](slurm/README.md)).
+For HPC cluster artifact paths and the `aigi_runs/` layout, see [slurm/README.md](slurm/README.md).
 
 ---
 
@@ -183,23 +154,12 @@ python -m training.train --config configs/vit_b16.yaml
 
 ### 4. HPC / Cluster training
 
-**Interactive (online) — `srun`:**
-```bash
-srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
-cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
-export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
-python -m training.train --config configs/vit_b16.yaml \
-    --data_root /scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k \
-    --num_workers 1
-```
-
-**Background (offline) — `sbatch`:**
 ```bash
 cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
 sbatch slurm/train_vit_b16.slurm
 ```
 
-For hyperparameter overrides, grid search, and artifact paths see [slurm/README.md](slurm/README.md).
+See [slurm/README.md](slurm/README.md) for interactive `srun` sessions, hyperparameter overrides, grid search, and artifact paths.
 
 ### 5. Google Colab — notebooks or full-dataset training
 
@@ -215,87 +175,60 @@ python -m training.train \
 
 ### 6. Grad-CAM visualisation
 
-Requires the `grad-cam` package (`pip install grad-cam`).
-Checkpoints are loaded automatically from their default paths in `checkpoints/`.
+Checkpoints are loaded from their default paths in `checkpoints/`.
 
-**Single image — both models side-by-side:**
 ```bash
+# Single image — both models (interactive)
 python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg --model both
-```
 
-**Single image — one model, save figure:**
-```bash
+# Save figures to disk
 python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg \
     --model resnet50 --save-dir outputs/gradcam/
 ```
 
-**Whole folder — ViT-B/16 only, save all figures:**
-```bash
-python visualization/gradcam.py --folder data/sampled_data_5k/test/ \
-    --model vit --save-dir outputs/gradcam/
-```
-
-**Custom checkpoint paths:**
-```bash
-python visualization/gradcam.py --image path/to/image.jpg --model both \
-    --resnet-ckpt checkpoints/resnet50/best_model_resnet50.pth \
-    --vit-ckpt    checkpoints/vit_b16/best_model_20260317_220741.pth
-```
-
-| Flag | Default | Description |
-|---|---|---|
-| `--image` / `--folder` | — | Single image or directory (mutually exclusive, one required) |
-| `--model` | `both` | `resnet50`, `vit`, or `both` |
-| `--resnet-ckpt` | `checkpoints/resnet50/best_model_resnet50.pth` | ResNet-50 checkpoint |
-| `--vit-ckpt` | `checkpoints/vit_b16/best_model_20260317_220741.pth` | ViT-B/16 checkpoint |
-| `--save-dir` | *(interactive)* | Directory to save PNG figures; omit to display interactively |
-| `--device` | *(auto)* | `cuda` or `cpu` |
-| `--image-size` | `224` | Resize target in pixels |
+See [visualization/README.md](visualization/README.md) for all flags and usage patterns.
 
 ---
 
 ### 7. Gradio Demo
 
-Requires both checkpoints to be present at their default paths (see above).
+A one-click local web app that runs both models and shows Grad-CAM heatmaps alongside the verdict.
+
+**Prerequisites**
+
+1. Install dependencies (includes `gradio` and `grad-cam`):
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Both model checkpoints must be present at their default paths:
+   ```
+   checkpoints/resnet50/best_model_resnet50.pth
+   checkpoints/vit_b16/best_model_20260317_220741.pth
+   ```
+   If you trained locally, they are created automatically.  
+   To use downloaded HPC artifacts, copy the `.pth` files into the paths above.
+
+**Launch**
 
 ```bash
+# from the project root
 python demo/app.py
 ```
 
-Gradio will print a local URL (e.g. `http://127.0.0.1:7860`). Open it in a browser, upload any image, and the app will show:
-- **Binary verdict + confidence** from ResNet-50 and ViT-B/16
-- **Grad-CAM heatmaps** highlighting where each model focuses
+Gradio prints a local URL, e.g.:
 
----
+```
+Running on local URL:  http://127.0.0.1:7860
+```
 
-### 8. Outputs
+Open that URL in any browser, upload an image (JPG / PNG), and the app will display:
 
-After training completes, the following files are saved automatically:
+- **Binary verdict + confidence score** from both ResNet-50 and ViT-B/16
+- **Grad-CAM heatmaps** showing which regions each model used to make its decision
 
-**`checkpoints/<model>/`**
+Example images from `data/sampled_data_5k/test/` are loaded automatically as quick-start examples (if the folder exists).
 
-| File | Contents |
-|---|---|
-| `best_model_<timestamp>.pth` | Best checkpoint (lowest val loss) |
-| `config.yaml` | Config used for this run |
-| `test_metrics_<timestamp>.json` | Test set accuracy, AUC, F1, confusion matrix |
-| `test_preds_<timestamp>.npz` | Per-sample predicted probs and true labels |
-
-**`outputs/metrics/`**
-
-| File | Contents |
-|---|---|
-| `<run_name>_<timestamp>_history.csv` | Per-epoch train loss, val loss, val metrics |
-
-**`outputs/figures/`** (auto-generated after training)
-
-| File | Contents |
-|---|---|
-| `<timestamp>_<run_name>_training_curves.png` | Train/val loss and val accuracy curves |
-| `<timestamp>_<run_name>_confusion_matrix.png` | Test set confusion matrix |
-| `<timestamp>_<run_name>_roc_curve.png` | Test set ROC curve with AUC |
-
-All files from the same run share the same `<timestamp>` (`YYYYMMDD_HHMMSS`).
+> **CPU-only machines:** Inference is slower but fully supported — no GPU required.
 
 ---
 
@@ -321,15 +254,5 @@ Add new models by registering them in `models/model_factory.py`.
 
 ---
 
-## Current Progress and Next Steps
 
-**Completed:**
-- Data pipeline: sampling, stratified splits, DataLoaders with augmentation, split-CSV persistence
-- Linear-probe baseline: ResNet-50 (90.20 % accuracy, 0.9662 AUC, 20 epochs) on Google Colab
-- Linear-probe baseline: ViT-B/16 (85.90 % accuracy, 0.9294 AUC, 11 epochs) on HPC cluster
-- HPC SLURM job scripts with automatic artifact management and `latest_vit` symlink
-- Modular codebase with YAML configs, CLI training scripts, and full visualization pipeline
-- Initial milestone report draft (`docs/draft_final_milestone_report_natural_language.md`)
 
-**Next Steps:**
-- Web demo for users to upload images and get AI-generated vs. real predictions
