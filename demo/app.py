@@ -196,7 +196,7 @@ def predict(pil_img: Image.Image | None):
 # ─────────────────────────────────────────────────────────────────────────────
 CSS = """
 /* ── Global ────────────────────────────────────────────────────────────── */
-.gradio-container { max-width: 1080px !important; margin: 0 auto !important; }
+.gradio-container { max-width: 1280px !important; margin: 0 auto !important; }
 
 /* ── Hero header ───────────────────────────────────────────────────────── */
 #hero {
@@ -310,15 +310,17 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
     </div>
     """)
 
-    # ── Upload + Analyze ─────────────────────────────────────────────────────
-    with gr.Row():
-        with gr.Column(scale=1, min_width=280):
+    # ── Row 1: Upload + Predictions ──────────────────────────────────────────
+    with gr.Row(equal_height=False):
+
+        # ── (1,1) Upload Image ───────────────────────────────────────────────
+        with gr.Column(scale=1, min_width=240):
             img_input = gr.Image(
                 label="Upload Image",
                 type="pil",
                 image_mode="RGB",
                 sources=["upload", "clipboard"],
-                height=310,
+                height=340,
                 elem_id="upload-panel",
             )
             analyze_btn = gr.Button(
@@ -327,76 +329,63 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
                 elem_id="analyze-btn",
             )
 
-    # ── Model Predictions ─────────────────────────────────────────────────────
-    gr.HTML("""
-    <div class="section-divider"><span>Model Predictions</span></div>
-    """)
+        # ── (1,2) ResNet Prediction ──────────────────────────────────────────
+        with gr.Column(scale=1):
+            with gr.Column(elem_classes="model-card"):
+                gr.HTML('<div class="card-title">ResNet-50</div>')
+                verdict_resnet = gr.HTML(value=_BLANK_BADGE)
+                label_resnet   = gr.Label(num_top_classes=2, label="Class Probabilities")
 
-    with gr.Row(equal_height=True):
-        # ResNet-50 card
-        with gr.Column(elem_classes="model-card"):
-            gr.HTML('<div class="card-title">ResNet-50</div>')
-            verdict_resnet = gr.HTML(value=_BLANK_BADGE)
-            label_resnet   = gr.Label(
-                num_top_classes=2,
-                label="Class Probabilities",
-            )
+        # ── (1,3) ViT Prediction ─────────────────────────────────────────────
+        with gr.Column(scale=1):
+            with gr.Column(elem_classes="model-card"):
+                gr.HTML('<div class="card-title">ViT-B / 16</div>')
+                verdict_vit = gr.HTML(value=_BLANK_BADGE)
+                label_vit   = gr.Label(num_top_classes=2, label="Class Probabilities")
 
-        # ViT-B/16 card
-        with gr.Column(elem_classes="model-card"):
-            gr.HTML('<div class="card-title">ViT-B / 16</div>')
-            verdict_vit = gr.HTML(value=_BLANK_BADGE)
-            label_vit   = gr.Label(
-                num_top_classes=2,
-                label="Class Probabilities",
-            )
+    # ── Row 2: Examples + Grad-CAM ───────────────────────────────────────────
+    with gr.Row(equal_height=False):
 
-    # ── Grad-CAM Attention Maps ───────────────────────────────────────────────
-    gr.HTML("""
-    <div class="section-divider"><span>Grad-CAM Attention Maps</span></div>
-    """)
-    gr.HTML("""
-    <p class="cam-note">
-        The highlighted regions show the areas each model finds most
-        discriminative when reaching its decision.
-        <strong>Warmer colours</strong> (red/yellow) indicate higher attention.
-    </p>
-    """)
+        # ── (2,1) Example Images ─────────────────────────────────────────────
+        with gr.Column(scale=1, min_width=240):
+            if EXAMPLE_IMAGES:
+                gr.HTML('<div class="section-divider"><span>Try an Example</span></div>')
+                gr.Examples(
+                    examples=[[p] for p in EXAMPLE_IMAGES],
+                    inputs=[img_input],
+                    label="",
+                    examples_per_page=6,
+                )
 
-    with gr.Row(equal_height=True):
-        with gr.Column(elem_classes="model-card"):
-            gr.HTML('<div class="card-title">ResNet-50 · Attention Heatmap</div>')
-            cam_resnet_out = gr.Image(
-                type="pil",
-                label="",
-                show_label=False,
-                height=290,
-                interactive=False,
-                elem_classes="cam-img",
-            )
+        # ── (2,2) ResNet-50 Grad-CAM ─────────────────────────────────────────
+        with gr.Column(scale=1):
+            gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            with gr.Column(elem_classes="model-card"):
+                gr.HTML('<div class="card-title">ResNet-50 · Attention Heatmap</div>')
+                cam_resnet_out = gr.Image(
+                    type="pil",
+                    label="",
+                    show_label=False,
+                    height=240,
+                    interactive=False,
+                    elem_classes="cam-img",
+                )
 
-        with gr.Column(elem_classes="model-card"):
-            gr.HTML('<div class="card-title">ViT-B/16 · Attention Heatmap</div>')
-            cam_vit_out = gr.Image(
-                type="pil",
-                label="",
-                show_label=False,
-                height=290,
-                interactive=False,
-                elem_classes="cam-img",
-            )
-
-    # ── Examples ──────────────────────────────────────────────────────────────
-    if EXAMPLE_IMAGES:
-        gr.HTML("""
-        <div class="section-divider"><span>Try an Example</span></div>
-        """)
-        gr.Examples(
-            examples=[[p] for p in EXAMPLE_IMAGES],
-            inputs=[img_input],
-            label="",
-            examples_per_page=6,
-        )
+        # ── (2,3) ViT Grad-CAM ───────────────────────────────────────────────
+        with gr.Column(scale=1):
+            gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            with gr.Column(elem_classes="model-card"):
+                gr.HTML('<div class="card-title">ViT-B/16 · Attention Heatmap</div>')
+                cam_vit_out = gr.Image(
+                    type="pil",
+                    label="",
+                    show_label=False,
+                    height=240,
+                    interactive=False,
+                    elem_classes="cam-img",
+                )
 
     # ── Footer ────────────────────────────────────────────────────────────────
     gr.HTML("""
