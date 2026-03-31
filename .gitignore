@@ -4,7 +4,7 @@ docs/
 
 
 # Model checkpoints
-# checkpoints/
+checkpoints/
 aigi_runs/
 
 # Training & evaluation outputs
