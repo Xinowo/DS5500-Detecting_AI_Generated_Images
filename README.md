@@ -75,6 +75,8 @@ DS5500-Detecting_AI_Generated_Images/
 │   ├── submit_all.sh
 │   └── README.md
 │
+├── tests/                          # pytest test suite (see tests/README.md)
+│
 ├── Final_Milestone_Report_Team_2.pdf
 ├── requirements.txt
 └── .gitignore
