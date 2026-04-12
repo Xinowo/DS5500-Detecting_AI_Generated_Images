@@ -268,8 +268,17 @@ class Trainer:
     def _compute_metrics(probs: np.ndarray, labels: np.ndarray) -> dict:
         preds  = (probs > 0.5).astype(int)
         report = classification_report(labels, preds, output_dict=True, zero_division=0)
+        n_classes = len(np.unique(labels))
+        if n_classes < 2:
+            logger.warning(
+                "Only %d class(es) present in eval set; ROC-AUC is undefined, recording 0.0.",
+                n_classes,
+            )
+            auc = 0.0
+        else:
+            auc = roc_auc_score(labels, probs)
         return {
-            "roc_auc":          roc_auc_score(labels, probs),
+            "roc_auc":          auc,
             "accuracy":         report["accuracy"],
             "precision":        report["macro avg"]["precision"],
             "recall":           report["macro avg"]["recall"],

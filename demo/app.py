@@ -75,6 +75,14 @@ def _load_models() -> None:
     if _cache:
         return
 
+    # Validate checkpoints exist before attempting to load
+    for model_name, ckpt_path in [("ResNet-50", RESNET_CKPT), ("ViT-B/16", VIT_CKPT)]:
+        if not ckpt_path.exists():
+            raise gr.Error(
+                f"{model_name} checkpoint not found: {ckpt_path}\n"
+                f"Please download the checkpoint or update the path in demo/app.py."
+            )
+
     # Suppress the "Trainable / Total" print from model builders
     with redirect_stdout(io.StringIO()):
         resnet = build_resnet50(freeze_backbone=False, num_classes=2)
@@ -417,5 +425,5 @@ if __name__ == "__main__":
         server_name="127.0.0.1",
         server_port=7862,
         share=False,
-        allowed_paths=["../data"],
+        allowed_paths=[str(ROOT / "data")],
     )

@@ -84,11 +84,24 @@ std  = [0.229, 0.224, 0.225]
 
 ## Corrupt image handling
 
-If an image cannot be loaded, `AIDataset` substitutes a blank `256 × 256` RGB
-image and emits a `WARNING`.  This keeps training alive if a file is missing,
-and all substitution events are visible in the logs.  The trade-off is that the
-blank image retains its original label; on a noisier dataset a strict `raise`
-or skip-and-count strategy would be more appropriate.
+If an image file cannot be opened, `AIDataset.__getitem__` substitutes a blank
+`256 × 256` black RGB image and emits a `WARNING` via Python logging.  This
+policy applies to **all three splits** (train, val, and test).
+
+**Why this design was chosen:**
+The sampled 5 k subset drawn from the Kaggle dataset contains no corrupt files,
+so the placeholder path is never hit in normal use.  Keeping it as a
+catch-all prevents a single unexpected I/O error from aborting a multi-hour
+training run on HPC.
+
+**Known trade-off:**
+A blank placeholder retains the original label of the corrupt entry.  On the
+val and test splits this means a corrupt image silently contributes a
+near-certain wrong prediction to the reported metrics.  If corrupt images are
+encountered at evaluation time, check the WARNING lines in the run log and
+remove the offending files before re-running.  On a larger or noisier dataset
+a strict `raise` on eval splits, or a skip-and-count collate function, would
+be more appropriate.
 
 ---
 

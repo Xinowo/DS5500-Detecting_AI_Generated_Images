@@ -31,9 +31,13 @@ Both runs use a frozen backbone (linear probe).  The codebase supports
 selective backbone unfreezing via `unfreeze_last_n_blocks` for possible
 future fine-tuning experiments, but this has not been tested yet.
 
-> **Reproducibility:** random seed is fixed at `42` in all configs. Re-running the same
-> config on the same machine with the pre-committed split CSVs in `data/splits/`
-> will reproduce these numbers.
+> **Reproducibility:** random seed is fixed at `42` in all configs and cuDNN
+> deterministic mode is enabled (`deterministic=True`, `benchmark=False`).
+> Re-running the same config on the same machine with the pre-committed split
+> CSVs in `data/splits/` should produce results very close to those reported
+> above. Bit-identical reproduction is not guaranteed because PyTorch's
+> multi-process DataLoader workers and certain GPU operations retain
+> non-deterministic behaviour even with a fixed seed.
 
 ---
 

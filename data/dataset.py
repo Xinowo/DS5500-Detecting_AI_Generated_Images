@@ -73,7 +73,11 @@ class AIDataset(Dataset):
             image = Image.open(img_path).convert("RGB")
         except Exception as exc:
             # Substitute a blank image so one corrupt file never aborts a batch.
-            # Events are logged as warnings and can be audited after the run.
+            # All substitution events are logged as WARNING and can be audited.
+            # NOTE: this policy applies to val/test splits too — a blank image
+            # keeps its original label and will count as a wrong prediction.
+            # The sampled 5 k dataset contains no corrupt files, so this path
+            # is not expected to be hit in normal use.
             logger.warning(
                 "Could not load image '%s' (%s); substituting blank placeholder.",
                 img_path, exc,
