@@ -30,6 +30,10 @@ Objectives:
 Both runs use a frozen backbone (linear probe).  Fine-tuning is supported via
 `unfreeze_last_n_blocks` in the config.
 
+> **Reproducibility:** random seed is fixed at `42` in all configs. Re-running the same
+> config on the same machine with the pre-committed split CSVs in `data/splits/`
+> will reproduce these numbers.
+
 ---
 
 ## Project Structure
@@ -48,8 +52,8 @@ DS5500-Detecting_AI_Generated_Images/
 │       ├── df_val.csv
 │       └── df_test.csv
 │
-├── demo/
-│   └── app.py                      # Gradio web demo (ResNet-50 + ViT + Grad-CAM)
+├── demo/                           # Gradio web demo (see demo/README.md)
+│   └── app.py                      # ResNet-50 + ViT + Grad-CAM
 │
 ├── models/                         # Model builders (see models/README.md)
 │   ├── resnet.py                   # ResNet-50 builder
