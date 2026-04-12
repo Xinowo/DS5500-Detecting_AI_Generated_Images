@@ -37,7 +37,7 @@ Individual fields can be overridden on the command line (e.g. `--epochs 5`).
 | `batch_size` | Mini-batch size |
 | `lr` | Learning rate for the classification head |
 | `backbone_lr` | Learning rate for unfrozen backbone layers |
-| `weight_decay` | L2 regularisation coefficient for AdamW |
+| `weight_decay` | L2 regularization coefficient for AdamW |
 | `label_smoothing` | Cross-entropy label smoothing (0.1 = 10 %) |
 | `patience` | Early-stopping patience in epochs (monitors val ROC-AUC) |
 | `grad_clip` | Max gradient norm for gradient clipping |

@@ -61,7 +61,7 @@ Two pipelines, returned by `get_transforms()` in `dataset.py`:
 |------|--------|
 | `RandomResizedCrop(224)` | Random scale and position — teaches the model to be location-invariant |
 | `RandomHorizontalFlip()` | Doubles effective dataset size for symmetric subjects |
-| `ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)` | Mild colour variation to reduce sensitivity to lighting and post-processing |
+| `ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1)` | Mild color variation to reduce sensitivity to lighting and post-processing |
 | `ToTensor()` | Convert PIL image to `[0, 1]` float tensor |
 | `Normalize(ImageNet mean/std)` | Required: both backbones were pretrained on ImageNet with these statistics |
 
@@ -74,7 +74,7 @@ Two pipelines, returned by `get_transforms()` in `dataset.py`:
 | `ToTensor()` | Convert PIL image to `[0, 1]` float tensor |
 | `Normalize(ImageNet mean/std)` | Same as training |
 
-ImageNet normalisation constants:
+ImageNet normalization constants:
 ```python
 mean = [0.485, 0.456, 0.406]
 std  = [0.229, 0.224, 0.225]

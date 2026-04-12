@@ -1,6 +1,6 @@
 # Visualization
 
-This folder contains two CLI tools for inspecting model behaviour.
+This folder contains two CLI tools for inspecting model behavior.
 
 | File | Purpose |
 |---|---|

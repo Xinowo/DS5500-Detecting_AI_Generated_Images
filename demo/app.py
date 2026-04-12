@@ -360,7 +360,7 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
         # ── (2,2) ResNet-50 Grad-CAM ─────────────────────────────────────────
         with gr.Column(scale=1):
             gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
-            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colors</strong> (red/yellow) indicate higher model attention.</p>')
             with gr.Column(elem_classes="model-card"):
                 gr.HTML('<div class="card-title">ResNet-50 · Attention Heatmap</div>')
                 cam_resnet_out = gr.Image(
@@ -375,7 +375,7 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
         # ── (2,3) ViT Grad-CAM ───────────────────────────────────────────────
         with gr.Column(scale=1):
             gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
-            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colors</strong> (red/yellow) indicate higher model attention.</p>')
             with gr.Column(elem_classes="model-card"):
                 gr.HTML('<div class="card-title">ViT-B/16 · Attention Heatmap</div>')
                 cam_vit_out = gr.Image(

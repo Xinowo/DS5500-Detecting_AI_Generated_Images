@@ -1,5 +1,5 @@
 """
-Grad-CAM visualisation for AIGI-Detection.
+Grad-CAM visualization for AIGI-Detection.
 
 Supported models
 ----------------
@@ -65,7 +65,7 @@ VIT_CHECKPOINT:    Path = _ROOT / "checkpoints" / "vit_b16"  / "best_model_20260
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 
-# ImageNet normalisation (same as training)
+# ImageNet normalization (same as training)
 _MEAN = [0.485, 0.456, 0.406]
 _STD  = [0.229, 0.224, 0.225]
 
@@ -356,7 +356,7 @@ def visualize_folder(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Grad-CAM visualisation for AIGI-Detection (ResNet-50 / ViT-B/16)"
+        description="Grad-CAM visualization for AIGI-Detection (ResNet-50 / ViT-B/16)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--image",  type=str, help="Path to a single image file.")

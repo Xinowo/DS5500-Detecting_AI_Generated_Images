@@ -246,9 +246,8 @@ def main() -> None:
         model.load_state_dict(state)
         logger.info("[Checkpoint] Warm-started from %s", args.checkpoint)
 
-    criterion = lambda logits, targets: F.cross_entropy(
-        logits, targets.long(), label_smoothing=cfg.label_smoothing
-    )
+    def criterion(logits, targets):
+        return F.cross_entropy(logits, targets.long(), label_smoothing=cfg.label_smoothing)
 
     # ------------------------------------------------------------------
     # Train

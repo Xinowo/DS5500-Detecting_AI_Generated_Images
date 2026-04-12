@@ -118,12 +118,16 @@ The original test set (`test_data_v2`) has no labels and is not used.
 
 | Stage | Approach |
 |-------|----------|
-| Pre-processing | Resize → RandomCrop/CenterCrop → ColorJitter (train only) → ImageNet normalisation |
+| Pre-processing | Resize → RandomCrop/CenterCrop → ColorJitter (train only) → ImageNet normalization |
 | Models | ResNet-50 and ViT-B/16, both pre-trained on ImageNet |
 | Training strategy | Frozen backbone (linear probe); selective backbone unfreezing available |
 | Loss | Cross-entropy with label smoothing (0.1) |
-| Optimiser | AdamW with cosine annealing LR |
-| Regularisation | Gradient clipping, early stopping (patience = 5), AMP |
+| Optimizer | AdamW with cosine annealing LR |
+| Regularization | Gradient clipping, early stopping (patience = 5), AMP |
+
+We picked ResNet-50 as the CNN baseline because it's a well-understood architecture with a strong track record on transfer learning tasks, and its 2,048-dim feature vector keeps the linear-probe head small and fast to train — practical for a T4 GPU with a 5k-image subset. ViT-B/16 was chosen as the transformer counterpart: where ResNet captures local texture patterns through convolutions, ViT processes the image as a sequence of 16×16 patches, so the two architectures likely pick up on different visual cues for detecting AI-generated content. We deliberately kept both models in linear-probe mode (frozen backbone) rather than full fine-tuning, because 5,000 training samples is too small to fine-tune 86M+ parameters without severe overfitting. Larger models such as ViT-L or CLIP were not explored in this project due to time constraints.
+
+The dataset is divided into a stratified 60/20/20 hold-out split (3,000 train / 1,000 val / 1,000 test), with class balance preserved across all three sets. The pre-computed split CSVs in `data/splits/` are committed to the repo so every run evaluates on the exact same partitions. Training monitors validation loss and ROC-AUC at the end of each epoch; if the tracked metric does not improve for 5 consecutive epochs, the best checkpoint is restored and training stops early. We chose hold-out over k-fold cross-validation for two reasons. First, even in linear-probe mode each epoch requires a full forward pass through the frozen backbone for every image, so k training runs would multiply GPU time non-trivially given GPU quota constraints. Second, because the linear-probe head has very few tunable parameters (a single linear layer on top of a frozen backbone), the risk of overfitting on the validation estimate is low and the variance reduction that k-fold provides is not worth the additional compute cost.
 
 ---
 
@@ -179,7 +183,7 @@ python -m training.train \
     --save_dir  /content/drive/MyDrive/checkpoints/resnet50
 ```
 
-### 6. Grad-CAM visualisation
+### 6. Grad-CAM visualization
 
 Checkpoints are loaded from their default paths in `checkpoints/`.
 

@@ -51,7 +51,7 @@ The configs expose `unfreeze_last_n_blocks` for partial backbone fine-tuning:
 - **ResNet-50:** `1` = unfreeze `layer4`; `2` = `layer3 + layer4`; up to `4` for the full backbone.
 - **ViT-B/16:** `N` = unfreeze the last N transformer encoder blocks.
 
-This would require more data or stronger regularisation to avoid overfitting and has not been
+This would require more data or stronger regularization to avoid overfitting and has not been
 evaluated yet.
 
 ---

@@ -1,5 +1,5 @@
 """
-Visualisation utilities for AIGI-Detection.
+Visualization utilities for AIGI-Detection.
 
 Functions:
   - plot_confusion_matrix  : Heatmap of the 2x2 confusion matrix.
