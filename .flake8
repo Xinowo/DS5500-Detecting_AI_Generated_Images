@@ -1,0 +1,11 @@
+[flake8]
+max-line-length = 88
+# E221/E251/E272: intentional vertical alignment style (common with black)
+# W503: line break before binary operator (conflicts with black)
+# E501: long lines in intentionally formatted sections
+extend-ignore = E221,E251,E272,E202,E501,W503
+per-file-ignores =
+    demo/app.py:E402
+    training/train.py:E402,E701
+    tests/conftest.py:E402
+    visualization/gradcam.py:E402

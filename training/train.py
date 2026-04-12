@@ -23,8 +23,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import os
-
 import numpy as np
 import pandas as pd
 import torch
@@ -154,7 +152,7 @@ def main() -> None:
     parser.add_argument("--batch_size",  default=None,  type=int,   help="Override batch_size.")
     parser.add_argument("--lr",          default=None,  type=float, help="Override lr.")
     parser.add_argument("--backbone_lr", default=None,  type=float, help="Override backbone_lr.")
-    parser.add_argument("--weight_decay",default=None,  type=float, help="Override weight_decay.")
+    parser.add_argument("--weight_decay", default=None,  type=float, help="Override weight_decay.")
     parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
     parser.add_argument("--run_name",    default=None,              help="Override run_name.")
     parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
@@ -224,8 +222,8 @@ def main() -> None:
         )
         splits_dir.mkdir(parents=True, exist_ok=True)
         df_train.to_csv(train_csv, index=False)
-        df_val.to_csv(  val_csv,   index=False)
-        df_test.to_csv( test_csv,  index=False)
+        df_val.to_csv(val_csv, index=False)
+        df_test.to_csv(test_csv, index=False)
         logger.info("[Data] Splits saved to %s/", splits_dir)
 
     logger.info("[Data] train=%d  val=%d  test=%d", len(df_train), len(df_val), len(df_test))

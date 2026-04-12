@@ -5,7 +5,6 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 import torch
-from pathlib import Path
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms

@@ -13,7 +13,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from dataclasses import asdict
 
 import numpy as np
 import torch
@@ -118,7 +117,7 @@ class Trainer:
                 "val_loss":     round(val_loss, 6),
                 "val_roc_auc":  round(metrics["roc_auc"], 6),
                 "val_accuracy": round(metrics["accuracy"], 6),
-                "val_precision":round(metrics["precision"], 6),
+                "val_precision": round(metrics["precision"], 6),
                 "val_recall":   round(metrics["recall"], 6),
                 "val_f1":       round(metrics["f1"], 6),
             })

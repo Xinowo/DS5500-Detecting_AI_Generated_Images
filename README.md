@@ -4,6 +4,11 @@
 
 **Team Members:** Xin Wang, Jiajun Fang
 
+> **Demo:** Upload an image and get a real-time AI vs. Real verdict with Grad-CAM heatmaps from both ResNet-50 and ViT-B/16.  
+> Run locally with `python demo/app.py` (see [How to Run §7](#7-gradio-demo)).
+
+![Demo UI](demo/demo_screenshot.png)
+
 ---
 
 ## Problem Statement and Objectives
@@ -45,8 +50,8 @@ future fine-tuning experiments, but this has not been tested yet.
 |----------|:---:|---|
 | Config YAML files (`configs/`) | Yes | — |
 | Pre-computed split CSVs (`data/splits/`) | Yes | — |
-| Trained checkpoint: ViT-B/16 (`checkpoints/vit_b16/`) | Yes | — |
-| Trained checkpoint: ResNet-50 (`checkpoints/resnet50/`) | Yes | — |
+| Trained checkpoint: ViT-B/16 (`checkpoints/vit_b16/`) | No | 327 MB — too large for GitHub; request from team or retrain with `configs/vit_b16.yaml` |
+| Trained checkpoint: ResNet-50 (`checkpoints/resnet50/`) | No | 90 MB — request from team or retrain with `configs/resnet50.yaml` |
 | Training history CSV (`outputs/vit_outputs/`) | Yes | — |
 | Image dataset (`data/sampled_data_5k/`) | No | See `data/README.md` for download and sampling instructions |
 | Python environment | No | `pip install -r requirements.txt` |
@@ -161,6 +166,9 @@ The dataset is divided into a stratified 60/20/20 hold-out split (3,000 train / 
 pip install -r requirements.txt
 ```
 
+> **Tested on:** Python 3.12 · PyTorch 2.2.2 · torchvision 0.17.2 · CPU-only (local) and CUDA 11.8 (Google Colab T4 / HPC V100).  
+> Other patch-level versions of PyTorch 2.x should work but have not been verified.
+
 ### 2. Smoke test (CPU, no GPU required)
 
 To verify the full pipeline runs without errors on a CPU machine:
@@ -245,7 +253,7 @@ python demo/app.py
 Gradio prints a local URL, e.g.:
 
 ```
-Running on local URL:  http://127.0.0.1:7860
+Running on local URL:  http://127.0.0.1:7862
 ```
 
 Open that URL in any browser, upload an image (JPG / PNG), and the app will display:

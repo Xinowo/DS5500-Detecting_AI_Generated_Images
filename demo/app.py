@@ -112,12 +112,18 @@ def _load_models() -> None:
 # Inference helpers
 # ─────────────────────────────────────────────────────────────────────────────
 def _preprocess(pil_img: Image.Image, size: int = 224) -> torch.Tensor:
-    tf = transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=_MEAN, std=_STD),
-    ])
-    return tf(pil_img.convert("RGB")).unsqueeze(0).to(DEVICE)
+    try:
+        tf = transforms.Compose([
+            transforms.Resize((size, size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=_MEAN, std=_STD),
+        ])
+        return tf(pil_img.convert("RGB")).unsqueeze(0).to(DEVICE)
+    except (OSError, Image.UnidentifiedImageError) as exc:
+        raise ValueError(
+            f"Cannot preprocess image: {exc}. "
+            "Please upload a valid JPEG, PNG, or WebP file."
+        ) from exc
 
 
 def _run_model(
@@ -132,26 +138,34 @@ def _run_model(
         label_dict : ``{"AI-Generated": p_ai, "Real": p_real}``
         cam_image  : PIL RGB image with heatmap overlay
     """
-    img_224 = pil_img.convert("RGB").resize((224, 224))
-    tensor  = _preprocess(pil_img)
+    try:
+        img_224 = pil_img.convert("RGB").resize((224, 224))
+        tensor  = _preprocess(pil_img)
 
-    with torch.no_grad():
-        logits = model(tensor)
-        probs  = torch.softmax(logits, dim=1)[0]
+        with torch.no_grad():
+            logits = model(tensor)
+            probs  = torch.softmax(logits, dim=1)[0]
 
-    prob_ai   = float(probs[1])
-    prob_real = float(probs[0])
+        prob_ai   = float(probs[1])
+        prob_real = float(probs[0])
 
-    # Grad-CAM on the AI-Generated class (index 1)
-    grayscale_cam = cam(
-        input_tensor=tensor,
-        targets=[ClassifierOutputTarget(target_class)],
-    )[0]
+        # Grad-CAM on the AI-Generated class (index 1)
+        grayscale_cam = cam(
+            input_tensor=tensor,
+            targets=[ClassifierOutputTarget(target_class)],
+        )[0]
 
-    rgb_arr = np.array(img_224, dtype=np.float32) / 255.0
-    vis_arr = show_cam_on_image(rgb_arr, grayscale_cam, use_rgb=True)
+        rgb_arr = np.array(img_224, dtype=np.float32) / 255.0
+        vis_arr = show_cam_on_image(rgb_arr, grayscale_cam, use_rgb=True)
 
-    return {"AI-Generated": prob_ai, "Real": prob_real}, Image.fromarray(vis_arr)
+        return {"AI-Generated": prob_ai, "Real": prob_real}, Image.fromarray(vis_arr)
+    except torch.cuda.OutOfMemoryError as exc:
+        raise RuntimeError(
+            "GPU out of memory during inference. "
+            "Try restarting the demo or using a smaller image."
+        ) from exc
+    except (RuntimeError, ValueError) as exc:
+        raise RuntimeError(f"Inference failed: {exc}") from exc
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -191,12 +205,20 @@ def predict(pil_img: Image.Image | None):
     if pil_img is None:
         return _BLANK_BADGE, None, None, _BLANK_BADGE, None, None
 
-    _load_models()
+    try:
+        _load_models()
 
-    lbl_r, cam_r = _run_model(pil_img, _cache["resnet"],  _cache["cam_resnet"])
-    lbl_v, cam_v = _run_model(pil_img, _cache["vit"],     _cache["cam_vit"])
+        lbl_r, cam_r = _run_model(pil_img, _cache["resnet"],  _cache["cam_resnet"])
+        lbl_v, cam_v = _run_model(pil_img, _cache["vit"],     _cache["cam_vit"])
 
-    return _verdict_html(lbl_r), lbl_r, cam_r, _verdict_html(lbl_v), lbl_v, cam_v
+        return _verdict_html(lbl_r), lbl_r, cam_r, _verdict_html(lbl_v), lbl_v, cam_v
+    except Exception as exc:  # noqa: BLE001
+        err_html = (
+            '<div style="text-align:center;padding:16px;border-radius:12px;'
+            'background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;">'
+            f'<strong>Error:</strong> {exc}</div>'
+        )
+        return err_html, None, None, err_html, None, None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
