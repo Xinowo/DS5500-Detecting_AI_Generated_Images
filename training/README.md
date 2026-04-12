@@ -72,9 +72,10 @@ in `outputs_dir/metrics/` alongside a training-history CSV.
 ## Reproducibility
 
 Seed `42` is set globally at the start of every run by `seed_everything()`,
-which seeds Python's `random`, `numpy`, `torch`, and `torch.cuda`
-(cuDNN deterministic mode enabled). The pre-computed split CSVs in `data/splits/`
-are committed, so re-running the same config on the same machine will produce
+which seeds Python's `random`, `numpy`, `torch`, and `torch.cuda`, and sets
+`torch.backends.cudnn.deterministic = True` / `benchmark = False` to enable
+cuDNN deterministic mode. The pre-computed split CSVs in `data/splits/` are
+committed, so re-running the same config on the same machine will produce
 identical results.
 
 ---

@@ -72,12 +72,12 @@ class AIDataset(Dataset):
         try:
             image = Image.open(img_path).convert("RGB")
         except Exception as exc:
+            # Substitute a blank image so one corrupt file never aborts a batch.
+            # Events are logged as warnings and can be audited after the run.
             logger.warning(
                 "Could not load image '%s' (%s); substituting blank placeholder.",
                 img_path, exc,
             )
-            # Return a blank image rather than raising so one corrupt file
-            # doesn't abort the entire DataLoader batch.
             image = Image.new("RGB", (256, 256))
 
         if self.transform is not None:

@@ -121,6 +121,11 @@ def _validate_config(cfg: Config) -> None:
             f"val_ratio + test_ratio must be < 1.0, "
             f"got {cfg.val_ratio} + {cfg.test_ratio} = {cfg.val_ratio + cfg.test_ratio}"
         )
+    if cfg.val_ratio == 0.0 and cfg.test_ratio == 0.0:
+        raise ValueError(
+            "val_ratio and test_ratio cannot both be 0; "
+            "at least one evaluation split is required."
+        )
 
 
 def seed_everything(seed: int) -> None:
@@ -128,6 +133,8 @@ def seed_everything(seed: int) -> None:
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 # ---------------------------------------------------------------------------

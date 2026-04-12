@@ -82,6 +82,16 @@ std  = [0.229, 0.224, 0.225]
 
 ---
 
+## Corrupt image handling
+
+If an image cannot be loaded, `AIDataset` substitutes a blank `256 × 256` RGB
+image and emits a `WARNING`.  This keeps training alive if a file is missing,
+and all substitution events are visible in the logs.  The trade-off is that the
+blank image retains its original label; on a noisier dataset a strict `raise`
+or skip-and-count strategy would be more appropriate.
+
+---
+
 ## Files
 
 | File | Contents |

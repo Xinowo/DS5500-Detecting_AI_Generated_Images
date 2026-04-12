@@ -141,6 +141,11 @@ class Trainer:
                 logger.info("  Early stopping triggered.")
                 break
 
+        # Restore the best checkpoint into memory so the model is ready for evaluate().
+        if self.best_ckpt_path is not None:
+            self.model.load_state_dict(torch.load(self.best_ckpt_path, map_location=self.device))
+            logger.info("Restored best checkpoint: %s", self.best_ckpt_path)
+
         log_file.close()
         logger.info("\nTraining complete. Epoch log saved -> %s", log_path)
 
