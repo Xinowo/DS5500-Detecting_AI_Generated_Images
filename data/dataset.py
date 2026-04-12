@@ -55,6 +55,7 @@ class AIDataset(Dataset):
         self.dataframe = dataframe.reset_index(drop=True)
         self.data_root = Path(data_root)
         self.transform = transform
+        self.corrupt_count = 0
 
     def __len__(self) -> int:
         return len(self.dataframe)
@@ -82,6 +83,7 @@ class AIDataset(Dataset):
                 "Could not load image '%s' (%s); substituting blank placeholder.",
                 img_path, exc,
             )
+            self.corrupt_count += 1
             image = Image.new("RGB", (256, 256))
 
         if self.transform is not None:

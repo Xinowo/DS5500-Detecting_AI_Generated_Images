@@ -101,6 +101,7 @@ class TestAIDataset:
         tensor, label = ds[0]  # must not raise
         assert isinstance(tensor, torch.Tensor)
         assert tensor.shape == (3, 224, 224)
+        assert ds.corrupt_count == 1
 
 
 # ---------------------------------------------------------------------------

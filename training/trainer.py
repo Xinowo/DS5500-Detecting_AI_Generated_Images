@@ -165,6 +165,10 @@ class Trainer:
             logger.info("Loaded checkpoint: %s", checkpoint_path)
 
         test_loss, test_preds, test_labels = self._eval_one_epoch(test_loader)
+        if hasattr(test_loader.dataset, "corrupt_count"):
+            n = test_loader.dataset.corrupt_count
+            if n > 0:
+                logger.warning("Test set: %d corrupt image(s) replaced with blank placeholders.", n)
         metrics = self._compute_metrics(test_preds, test_labels)
 
         logger.info("\n--- Test Set Results ---")

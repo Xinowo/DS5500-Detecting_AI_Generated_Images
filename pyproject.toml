@@ -1,3 +1,9 @@
+[project]
+name = "ds5500-detecting-ai-generated-images"
+version = "1.0.0"
+description = "Detecting AI-generated images using pretrained vision models"
+requires-python = ">=3.10"
+
 # pytest configuration — auto-loaded when running `pytest` from the project root.
 # pythonpath = ["."] ensures modules like `data.dataset` resolve correctly.
 [tool.pytest.ini_options]

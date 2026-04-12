@@ -39,6 +39,18 @@ future fine-tuning experiments, but this has not been tested yet.
 > multi-process DataLoader workers and certain GPU operations retain
 > non-deterministic behaviour even with a fixed seed.
 
+### Repository Artifacts
+
+| Artifact | Included in Repo | How to Obtain |
+|----------|:---:|---|
+| Config YAML files (`configs/`) | Yes | — |
+| Pre-computed split CSVs (`data/splits/`) | Yes | — |
+| Trained checkpoint: ViT-B/16 (`checkpoints/vit_b16/`) | Yes | — |
+| Trained checkpoint: ResNet-50 (`checkpoints/resnet50/`) | Yes | — |
+| Training history CSV (`outputs/vit_outputs/`) | Yes | — |
+| Image dataset (`data/sampled_data_5k/`) | No | See `data/README.md` for download and sampling instructions |
+| Python environment | No | `pip install -r requirements.txt` |
+
 ---
 
 ## Project Structure
