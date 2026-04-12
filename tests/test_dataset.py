@@ -90,16 +90,17 @@ class TestAIDataset:
         image, _ = ds[0]
         assert isinstance(image, Image.Image)
 
-    def test_corrupted_image_raises(self, tmp_path):
-        """A corrupted file should raise — update this test once Round 2
-        error handling is added (it should return a blank fallback instead)."""
+    def test_corrupted_image_returns_placeholder(self, tmp_path):
+        """Since Round 2, a corrupted file returns a zero-filled placeholder
+        tensor instead of crashing."""
         bad = tmp_path / "corrupt.jpg"
         bad.write_bytes(b"not a real image")
         df = pd.DataFrame({"file_name": ["corrupt.jpg"], "label": [0]})
         _, eval_tf = get_transforms()
         ds = AIDataset(df, tmp_path, transform=eval_tf)
-        with pytest.raises(Exception):
-            _ = ds[0]
+        tensor, label = ds[0]  # must not raise
+        assert isinstance(tensor, torch.Tensor)
+        assert tensor.shape == (3, 224, 224)
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +157,19 @@ class TestPrepareSplits:
         a_train, _, _ = prepare_splits(df, None, 0.2, 0.2, seed=0)
         b_train, _, _ = prepare_splits(df, None, 0.2, 0.2, seed=99)
         assert list(a_train["file_name"]) != list(b_train["file_name"])
+
+    def test_missing_column_raises(self):
+        """DataFrame without required columns must raise ValueError."""
+        df = pd.DataFrame({"filename": ["a.jpg"], "label": [0]})  # wrong col name
+        with pytest.raises(ValueError, match="missing required columns"):
+            prepare_splits(df, None, 0.2, 0.2, seed=0)
+
+    def test_invalid_labels_raise(self):
+        """Labels outside {0, 1} must raise ValueError."""
+        df = self._make_df()
+        df.loc[0, "label"] = 2  # inject bad label
+        with pytest.raises(ValueError, match="contain only 0 or 1"):
+            prepare_splits(df, None, 0.2, 0.2, seed=0)
 
 
 # ---------------------------------------------------------------------------
