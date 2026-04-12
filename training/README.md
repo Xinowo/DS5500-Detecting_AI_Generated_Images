@@ -61,8 +61,9 @@ Three metrics are tracked during training and reported at final test evaluation:
 | **Accuracy** | Overall correctness rate. Straightforward to interpret and meaningful here because the test set is 50/50 balanced. |
 
 Metrics are computed on the validation set at the end of every epoch and on the
-test set once after training completes. All results are saved to a JSON file
-in `outputs_dir/metrics/` alongside a training-history CSV.
+test set once after training completes. The training-history CSV is saved to
+`outputs_dir/metrics/`. The final test-metrics JSON and per-sample prediction
+NPZ are saved to `save_dir` alongside the best checkpoint.
 
 > **Early stopping** monitors **validation loss** (not ROC-AUC). Training halts
 > when val loss has not improved for `patience` consecutive epochs.
@@ -75,8 +76,10 @@ Seed `42` is set globally at the start of every run by `seed_everything()`,
 which seeds Python's `random`, `numpy`, `torch`, and `torch.cuda`, and sets
 `torch.backends.cudnn.deterministic = True` / `benchmark = False` to enable
 cuDNN deterministic mode. The pre-computed split CSVs in `data/splits/` are
-committed, so re-running the same config on the same machine will produce
-identical results.
+committed, so re-running the same config on the same machine should produce
+results very close to those reported above. Bit-identical reproduction is not
+guaranteed because PyTorch's multi-process DataLoader workers and certain GPU
+operations retain non-deterministic behaviour even with a fixed seed.
 
 ---
 

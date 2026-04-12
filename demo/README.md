@@ -33,7 +33,7 @@ python demo/app.py
 Gradio will print a local URL:
 
 ```
-Running on local URL:  http://127.0.0.1:7860
+Running on local URL:  http://127.0.0.1:7862
 ```
 
 Open that URL in any browser.

@@ -222,6 +222,16 @@ def prepare_splits(
 
 
 # ---------------------------------------------------------------------------
+# DataLoader reproducibility helper
+# ---------------------------------------------------------------------------
+def _worker_init_fn(worker_id: int) -> None:  # noqa: ARG001
+    """Seed each DataLoader worker so multi-process loading is reproducible."""
+    worker_seed = torch.initial_seed() % 2**32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
+
+# ---------------------------------------------------------------------------
 # DataLoader factory
 # ---------------------------------------------------------------------------
 def get_dataloaders(
@@ -269,7 +279,16 @@ def get_dataloaders(
     val_ds   = AIDataset(df_val,   val_root,   transform=eval_tf)
     test_ds  = AIDataset(df_test,  test_root,  transform=eval_tf)
 
-    loader_kwargs = dict(batch_size=batch_size, num_workers=num_workers, pin_memory=True)
+    g = torch.Generator()
+    g.manual_seed(42)
+
+    loader_kwargs = dict(
+        batch_size=batch_size,
+        num_workers=num_workers,
+        pin_memory=True,
+        worker_init_fn=_worker_init_fn,
+        generator=g,
+    )
 
     train_loader = DataLoader(train_ds, shuffle=True,  **loader_kwargs)
     val_loader   = DataLoader(val_ds,   shuffle=False, **loader_kwargs)
