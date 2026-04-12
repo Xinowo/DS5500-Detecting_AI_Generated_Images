@@ -59,7 +59,7 @@ class Trainer:
         self.scheduler = self._build_scheduler()
         self.scaler    = GradScaler() if cfg.use_amp else None
 
-    def _build_scheduler(self):
+    def _build_scheduler(self) -> CosineAnnealingLR:
         cfg          = self.cfg
         eta_min      = getattr(cfg, 'eta_min', 1e-6)
         warmup       = getattr(cfg, 'warmup_epochs', 0)

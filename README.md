@@ -41,7 +41,7 @@ DS5500-Detecting_AI_Generated_Images/
 │   ├── vit_b16.yaml
 │   └── smoke_test.yaml             # CPU / quick sanity-check config
 │
-├── data/
+├── data/                           # Dataset, transforms, splits (see data/README.md)
 │   ├── dataset.py                  # AIDataset, transforms, split logic, DataLoader factory
 │   └── splits/                     # Pre-computed train/val/test split CSVs
 │       ├── df_train.csv
@@ -51,12 +51,12 @@ DS5500-Detecting_AI_Generated_Images/
 ├── demo/
 │   └── app.py                      # Gradio web demo (ResNet-50 + ViT + Grad-CAM)
 │
-├── models/
+├── models/                         # Model builders (see models/README.md)
 │   ├── resnet.py                   # ResNet-50 builder
 │   ├── vit.py                      # ViT-B/16 builder
 │   └── model_factory.py            # build_model() dispatcher
 │
-├── training/
+├── training/                       # Training loop and config (see training/README.md)
 │   ├── train.py                    # CLI entry-point
 │   └── trainer.py                  # Trainer class (fit / evaluate)
 │

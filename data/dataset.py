@@ -87,7 +87,7 @@ class AIDataset(Dataset):
 # ---------------------------------------------------------------------------
 # Transforms
 # ---------------------------------------------------------------------------
-def get_transforms() -> tuple:
+def get_transforms() -> tuple[transforms.Compose, transforms.Compose]:
     """Return ``(train_transform, eval_transform)`` for 224-px models.
 
     Train pipeline applies random augmentations; eval pipeline crops deterministically.
