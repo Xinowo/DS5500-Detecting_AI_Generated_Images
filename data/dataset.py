@@ -10,6 +10,7 @@ Provides:
 
 from __future__ import annotations
 
+import logging
 import os
 import json
 import random
@@ -23,6 +24,8 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from sklearn.model_selection import train_test_split
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -66,7 +69,14 @@ class AIDataset(Dataset):
             img_name = os.path.basename(img_name)
 
         img_path = self.data_root / img_name
-        image = Image.open(img_path).convert("RGB")
+        try:
+            image = Image.open(img_path).convert("RGB")
+        except Exception as exc:
+            logger.warning(
+                "Could not load image '%s' (%s); substituting blank placeholder.",
+                img_path, exc,
+            )
+            image = Image.new("RGB", (256, 256))
 
         if self.transform is not None:
             image = self.transform(image)
@@ -129,6 +139,23 @@ def prepare_splits(
     Returns:
         ``(df_train, df_val, df_test)`` DataFrames.
     """
+    # --- Input validation ---
+    required_cols = {"file_name", "label"}
+    missing = required_cols - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"DataFrame is missing required columns: {missing}. "
+            f"Found columns: {list(df.columns)}"
+        )
+    valid_labels = {0, 1}
+    actual_labels = set(df["label"].dropna().unique().tolist())
+    bad_labels = actual_labels - valid_labels
+    if bad_labels:
+        raise ValueError(
+            f"Column 'label' must contain only 0 or 1; "
+            f"found unexpected values: {bad_labels}"
+        )
+
     # Optional sub-sampling
     if train_size is not None:
         df_pool, _ = train_test_split(
@@ -148,7 +175,7 @@ def prepare_splits(
         df_train = df_pool[df_pool["file_name"].isin(split["train"])].copy().reset_index(drop=True)
         df_val   = df_pool[df_pool["file_name"].isin(split["val"])  ].copy().reset_index(drop=True)
         df_test  = df_pool[df_pool["file_name"].isin(split["test"]) ].copy().reset_index(drop=True)
-        print(f"[Split] Loaded split from {split_json_path}")
+        logger.info("[Split] Loaded split from %s", split_json_path)
         return df_train, df_val, df_test
 
     # Compute split
@@ -183,7 +210,7 @@ def prepare_splits(
         }
         with open(split_json_path, "w") as fh:
             json.dump(payload, fh, indent=2)
-        print(f"[Split] Saved split to {split_json_path}")
+        logger.info("[Split] Saved split to %s", split_json_path)
 
     return df_train, df_val, df_test
 
@@ -226,9 +253,9 @@ def get_dataloaders(
                   else root)
     test_root  = root / "test"       if (root / "test").is_dir()       else root
 
-    print(f"[DataLoader] train images : {train_root}")
-    print(f"[DataLoader] val images   : {val_root}")
-    print(f"[DataLoader] test images  : {test_root}")
+    logger.info("[DataLoader] train images : %s", train_root)
+    logger.info("[DataLoader] val images   : %s", val_root)
+    logger.info("[DataLoader] test images  : %s", test_root)
 
     train_tf, eval_tf = get_transforms()
 
