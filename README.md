@@ -11,6 +11,17 @@
 
 ---
 
+## Quick Start
+
+```bash
+pip install -r requirements.txt                              # install dependencies
+pytest -q                                                     # run test suite (68 tests)
+python -m training.train --config configs/smoke_test.yaml     # smoke test (CPU, ~2 min)
+python demo/app.py                                            # launch Gradio demo
+```
+
+---
+
 ## Problem Statement and Objectives
 
 Generative AI models can now produce photorealistic images that are difficult to
@@ -52,7 +63,7 @@ future fine-tuning experiments, but this has not been tested yet.
 | Pre-computed split CSVs (`data/splits/`) | Yes | — |
 | Trained checkpoint: ViT-B/16 (`checkpoints/vit_b16/`) | No | 327 MB — too large for GitHub; request from team or retrain with `configs/vit_b16.yaml` |
 | Trained checkpoint: ResNet-50 (`checkpoints/resnet50/`) | No | 90 MB — request from team or retrain with `configs/resnet50.yaml` |
-| Training history CSV (`outputs/vit_outputs/`) | Yes | — |
+| Training history CSV (`outputs/vit_outputs/`) | No | Generated during training; retrain to reproduce |
 | Image dataset (`data/sampled_data_5k/`) | No | See `data/README.md` for download and sampling instructions |
 | Python environment | No | `pip install -r requirements.txt` |
 
@@ -286,6 +297,15 @@ Add new models by registering them in `models/model_factory.py`.
 - **Hardware difference:** ResNet-50 was trained on Google Colab (Tesla T4); ViT-B/16 was trained on the Northeastern Discovery HPC cluster (V100-SXM2).  Direct timing comparisons are not meaningful.
 - **Backbone frozen:** Both models are evaluated in linear-probe mode only; full fine-tuning has not yet been tested.
 - **No augmentation at inference:** Validation and test splits use deterministic center-crop transforms only.
+
+---
+
+## Team Contributions
+
+| Member | Responsibilities |
+|--------|------------------|
+| Xin Wang | ViT-B/16 experiments, tests, Gradio demo, README, repo structure |
+| Jiajun Fang | Training pipeline, ResNet-50 baseline, Grad-CAM analysis, notebooks, result interpretation |
 
 ---
 
