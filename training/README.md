@@ -39,7 +39,7 @@ Individual fields can be overridden on the command line (e.g. `--epochs 5`).
 | `backbone_lr` | Learning rate for unfrozen backbone layers |
 | `weight_decay` | L2 regularization coefficient for AdamW |
 | `label_smoothing` | Cross-entropy label smoothing (0.1 = 10 %) |
-| `patience` | Early-stopping patience in epochs (monitors val ROC-AUC) |
+| `patience` | Early-stopping patience in epochs (monitors **val loss**) |
 | `grad_clip` | Max gradient norm for gradient clipping |
 | `use_amp` | `true` = automatic mixed precision (faster on GPUs with Tensor Cores) |
 | `eta_min` | Minimum LR floor for `CosineAnnealingLR` |
@@ -56,13 +56,16 @@ Three metrics are tracked during training and reported at final test evaluation:
 
 | Metric | Why we use it |
 |--------|--------------|
-| **ROC-AUC** | Threshold-independent; measures the model's ability to rank AI-generated images above real ones regardless of the decision threshold. Used for early stopping because it is more stable than accuracy. |
+| **ROC-AUC** | Threshold-independent; measures the model's ability to rank AI-generated images above real ones regardless of the decision threshold. Logged every epoch and reported at final evaluation. |
 | **F1** | Harmonic mean of precision and recall. Captures both false positives and false negatives equally — important if the cost of each type of mistake is similar. |
 | **Accuracy** | Overall correctness rate. Straightforward to interpret and meaningful here because the test set is 50/50 balanced. |
 
 Metrics are computed on the validation set at the end of every epoch and on the
 test set once after training completes. All results are saved to a JSON file
 in `outputs_dir/metrics/` alongside a training-history CSV.
+
+> **Early stopping** monitors **validation loss** (not ROC-AUC). Training halts
+> when val loss has not improved for `patience` consecutive epochs.
 
 ---
 

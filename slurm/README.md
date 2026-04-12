@@ -62,12 +62,17 @@ python -u -m training.train \
     --num_workers 1 \
     --save_dir "$BASE_DIR/checkpoints" \
     --outputs_dir "$BASE_DIR/outputs" \
-    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-stage1-$RUN_ID.log"
+    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-$RUN_ID.log"
 ```
 
-After Stage 1 finishes the script writes a `latest_vit` symlink pointing to that run's directory.
+After training finishes the script writes a `latest_vit` symlink pointing to that run's directory.
 
-**Stage 2 (fine-tune, warm-start from Stage 1):**
+**Fine-tuning (possible future work):**
+
+The codebase supports selective backbone unfreezing but this has **not** been
+evaluated in our current experiments.  The example below shows how a future
+fine-tuning run could warm-start from a linear-probe checkpoint:
+
 ```bash
 srun --partition=gpu --gres=gpu:v100-sxm2:1 --pty bash
 cd /home/$USER/DS5500_Data_Capstone/DS5500-Detecting_AI_Generated_Images
@@ -78,7 +83,7 @@ RUN_ID=$(date +%Y%m%d_%H%M%S)
 BASE_DIR=$SCRATCH_BASE/aigi_runs/$RUN_ID
 mkdir -p "$BASE_DIR/checkpoints" "$BASE_DIR/outputs" "$SCRATCH_BASE/aigi_logs"
 
-# Pick up the best checkpoint from the most recent Stage 1 run
+# Pick up the best checkpoint from the most recent linear-probe run
 STAGE1_CKPT=$(ls -t $SCRATCH_BASE/aigi_runs/latest_vit/checkpoints/best_model_*.pth | head -1)
 echo "Warm-starting from: $STAGE1_CKPT"
 
@@ -93,7 +98,7 @@ python -u -m training.train \
     --num_workers 1 \
     --save_dir "$BASE_DIR/checkpoints" \
     --outputs_dir "$BASE_DIR/outputs" \
-    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-stage2-$RUN_ID.log"
+    2>&1 | tee "$SCRATCH_BASE/aigi_logs/srun-vit-ft-$RUN_ID.log"
 ```
 
 To use a specific checkpoint instead of `latest_vit`, replace the `ls` line with:
@@ -111,7 +116,7 @@ All scripts pass `EXTRA_ARGS` verbatim to `training/train.py`, overriding whatev
 # Override learning rate and number of epochs
 sbatch --export=ALL,EXTRA_ARGS="--epochs 20 --lr 3e-4" slurm/train_vit_b16.slurm
 
-# Fine-tune: unfreeze last 2 backbone blocks
+# (Future work) Fine-tune: unfreeze last 2 backbone blocks
 sbatch --export=ALL,EXTRA_ARGS="--unfreeze_last_n_blocks 2 --backbone_lr 5e-6 --run_name vit-ft" \
     slurm/train_vit_b16.slurm
 ```

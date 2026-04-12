@@ -75,7 +75,7 @@ _STD  = [0.229, 0.224, 0.225]
 # ---------------------------------------------------------------------------
 
 def load_resnet50(path: str | Path, device: str = "cpu") -> nn.Module:
-    """Load the fine-tuned ResNet-50 checkpoint.
+    """Load the trained ResNet-50 checkpoint.
 
     The model is rebuilt via ``build_resnet50`` (freeze_backbone=False so
     *all* weights are loaded), then the saved state-dict is applied.
@@ -88,7 +88,7 @@ def load_resnet50(path: str | Path, device: str = "cpu") -> nn.Module:
 
 
 def load_vit_b16(path: str | Path, device: str = "cpu") -> nn.Module:
-    """Load the fine-tuned ViT-B/16 checkpoint."""
+    """Load the trained ViT-B/16 checkpoint."""
     model = build_vit_b16(freeze_backbone=False, num_classes=2)
     state = torch.load(path, map_location=device, weights_only=True)
     model.load_state_dict(state)
