@@ -76,6 +76,8 @@ class AIDataset(Dataset):
                 "Could not load image '%s' (%s); substituting blank placeholder.",
                 img_path, exc,
             )
+            # Return a blank image rather than raising so one corrupt file
+            # doesn't abort the entire DataLoader batch.
             image = Image.new("RGB", (256, 256))
 
         if self.transform is not None:

@@ -213,6 +213,8 @@ class Trainer:
             if self.cfg.use_amp:
                 self.scaler.scale(loss).backward()
                 if self.cfg.grad_clip > 0:
+                    # Unscale first so the clip threshold applies to float32 gradient
+                    # magnitudes, not the AMP-scaled values.
                     self.scaler.unscale_(self.optimizer)
                     nn.utils.clip_grad_norm_(self.model.parameters(), self.cfg.grad_clip)
                 self.scaler.step(self.optimizer)
