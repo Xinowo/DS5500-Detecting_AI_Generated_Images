@@ -23,8 +23,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import os
-
 import numpy as np
 import pandas as pd
 import torch
@@ -121,6 +119,11 @@ def _validate_config(cfg: Config) -> None:
             f"val_ratio + test_ratio must be < 1.0, "
             f"got {cfg.val_ratio} + {cfg.test_ratio} = {cfg.val_ratio + cfg.test_ratio}"
         )
+    if cfg.val_ratio == 0.0 and cfg.test_ratio == 0.0:
+        raise ValueError(
+            "val_ratio and test_ratio cannot both be 0; "
+            "at least one evaluation split is required."
+        )
 
 
 def seed_everything(seed: int) -> None:
@@ -128,6 +131,8 @@ def seed_everything(seed: int) -> None:
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +152,7 @@ def main() -> None:
     parser.add_argument("--batch_size",  default=None,  type=int,   help="Override batch_size.")
     parser.add_argument("--lr",          default=None,  type=float, help="Override lr.")
     parser.add_argument("--backbone_lr", default=None,  type=float, help="Override backbone_lr.")
-    parser.add_argument("--weight_decay",default=None,  type=float, help="Override weight_decay.")
+    parser.add_argument("--weight_decay", default=None,  type=float, help="Override weight_decay.")
     parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
     parser.add_argument("--run_name",    default=None,              help="Override run_name.")
     parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
@@ -217,8 +222,8 @@ def main() -> None:
         )
         splits_dir.mkdir(parents=True, exist_ok=True)
         df_train.to_csv(train_csv, index=False)
-        df_val.to_csv(  val_csv,   index=False)
-        df_test.to_csv( test_csv,  index=False)
+        df_val.to_csv(val_csv, index=False)
+        df_test.to_csv(test_csv, index=False)
         logger.info("[Data] Splits saved to %s/", splits_dir)
 
     logger.info("[Data] train=%d  val=%d  test=%d", len(df_train), len(df_val), len(df_test))
@@ -246,9 +251,8 @@ def main() -> None:
         model.load_state_dict(state)
         logger.info("[Checkpoint] Warm-started from %s", args.checkpoint)
 
-    criterion = lambda logits, targets: F.cross_entropy(
-        logits, targets.long(), label_smoothing=cfg.label_smoothing
-    )
+    def criterion(logits, targets):
+        return F.cross_entropy(logits, targets.long(), label_smoothing=cfg.label_smoothing)
 
     # ------------------------------------------------------------------
     # Train

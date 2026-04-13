@@ -5,7 +5,6 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 import torch
-from pathlib import Path
 from PIL import Image
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -101,6 +100,7 @@ class TestAIDataset:
         tensor, label = ds[0]  # must not raise
         assert isinstance(tensor, torch.Tensor)
         assert tensor.shape == (3, 224, 224)
+        assert ds.corrupt_count == 1
 
 
 # ---------------------------------------------------------------------------

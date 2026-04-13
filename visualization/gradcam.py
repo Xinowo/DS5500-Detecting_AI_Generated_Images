@@ -1,5 +1,5 @@
 """
-Grad-CAM visualisation for AIGI-Detection.
+Grad-CAM visualization for AIGI-Detection.
 
 Supported models
 ----------------
@@ -65,7 +65,7 @@ VIT_CHECKPOINT:    Path = _ROOT / "checkpoints" / "vit_b16"  / "best_model_20260
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 
-# ImageNet normalisation (same as training)
+# ImageNet normalization (same as training)
 _MEAN = [0.485, 0.456, 0.406]
 _STD  = [0.229, 0.224, 0.225]
 
@@ -75,11 +75,16 @@ _STD  = [0.229, 0.224, 0.225]
 # ---------------------------------------------------------------------------
 
 def load_resnet50(path: str | Path, device: str = "cpu") -> nn.Module:
-    """Load the fine-tuned ResNet-50 checkpoint.
+    """Load the trained ResNet-50 checkpoint.
 
     The model is rebuilt via ``build_resnet50`` (freeze_backbone=False so
     *all* weights are loaded), then the saved state-dict is applied.
     """
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            f"ResNet-50 checkpoint not found: {path}. "
+            "Please download the checkpoint or update the path."
+        )
     model = build_resnet50(freeze_backbone=False, num_classes=2)
     state = torch.load(path, map_location=device, weights_only=True)
     model.load_state_dict(state)
@@ -88,7 +93,12 @@ def load_resnet50(path: str | Path, device: str = "cpu") -> nn.Module:
 
 
 def load_vit_b16(path: str | Path, device: str = "cpu") -> nn.Module:
-    """Load the fine-tuned ViT-B/16 checkpoint."""
+    """Load the trained ViT-B/16 checkpoint."""
+    if not os.path.isfile(path):
+        raise FileNotFoundError(
+            f"ViT-B/16 checkpoint not found: {path}. "
+            "Please download the checkpoint or update the path."
+        )
     model = build_vit_b16(freeze_backbone=False, num_classes=2)
     state = torch.load(path, map_location=device, weights_only=True)
     model.load_state_dict(state)
@@ -125,7 +135,15 @@ def _make_transform(image_size: int = 224) -> transforms.Compose:
 
 def _load_image(path: str | Path, image_size: int = 224):
     """Return ``(pil_image_resized, input_tensor)``."""
-    img = Image.open(path).convert("RGB")
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f"Image file not found: {path}")
+    try:
+        img = Image.open(path).convert("RGB")
+    except (Image.UnidentifiedImageError, OSError) as exc:
+        raise ValueError(
+            f"Cannot open image '{path}': {exc}. "
+            "Please provide a valid JPEG, PNG, or WebP file."
+        ) from exc
     img_resized = img.resize((image_size, image_size))
     tensor = _make_transform(image_size)(img).unsqueeze(0)
     return img_resized, tensor
@@ -356,7 +374,7 @@ def visualize_folder(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Grad-CAM visualisation for AIGI-Detection (ResNet-50 / ViT-B/16)"
+        description="Grad-CAM visualization for AIGI-Detection (ResNet-50 / ViT-B/16)"
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--image",  type=str, help="Path to a single image file.")

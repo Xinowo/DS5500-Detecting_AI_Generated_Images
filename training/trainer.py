@@ -13,7 +13,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from dataclasses import asdict
 
 import numpy as np
 import torch
@@ -59,9 +58,9 @@ class Trainer:
         self.scheduler = self._build_scheduler()
         self.scaler    = GradScaler() if cfg.use_amp else None
 
-    def _build_scheduler(self):
+    def _build_scheduler(self) -> CosineAnnealingLR:
         cfg          = self.cfg
-        eta_min      = getattr(cfg, 'eta_min', 1e-6)
+        eta_min      = getattr(cfg, 'eta_min', 1e-5)
         warmup       = getattr(cfg, 'warmup_epochs', 0)
         cosine_steps = max(1, cfg.epochs - warmup)
         return CosineAnnealingLR(self.optimizer, T_max=cosine_steps, eta_min=eta_min)
@@ -90,7 +89,8 @@ class Trainer:
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / f"{cfg.run_name}_{self.timestamp}_history.csv"
         csv_fields = ["epoch", "train_loss", "val_loss", "val_roc_auc",
-                      "val_accuracy", "val_precision", "val_recall", "val_f1"]
+                      "val_accuracy", "val_precision", "val_recall", "val_f1",
+                      "val_corrupt_count"]
         log_file = open(log_path, "w", newline="")
         writer = csv.DictWriter(log_file, fieldnames=csv_fields)
         writer.writeheader()
@@ -103,7 +103,21 @@ class Trainer:
             logger.info("\nEpoch %d/%d", epoch, cfg.epochs)
 
             train_loss = self._train_one_epoch(train_loader)
+
+            # Reset corrupt counter before each val epoch so counts are per-epoch
+            if hasattr(val_loader.dataset, "reset_corrupt_count"):
+                val_loader.dataset.reset_corrupt_count()
+
             val_loss, val_preds, val_labels = self._eval_one_epoch(val_loader)
+
+            val_corrupt = 0
+            if hasattr(val_loader.dataset, "corrupt_count"):
+                val_corrupt = val_loader.dataset.corrupt_count
+                if val_corrupt > 0:
+                    logger.warning(
+                        "  Epoch %d val set: %d corrupt image(s) replaced with blank placeholders.",
+                        epoch, val_corrupt,
+                    )
 
             metrics = self._compute_metrics(val_preds, val_labels)
 
@@ -113,14 +127,15 @@ class Trainer:
             )
 
             writer.writerow({
-                "epoch":        epoch,
-                "train_loss":   round(train_loss, 6),
-                "val_loss":     round(val_loss, 6),
-                "val_roc_auc":  round(metrics["roc_auc"], 6),
-                "val_accuracy": round(metrics["accuracy"], 6),
-                "val_precision":round(metrics["precision"], 6),
-                "val_recall":   round(metrics["recall"], 6),
-                "val_f1":       round(metrics["f1"], 6),
+                "epoch":             epoch,
+                "train_loss":        round(train_loss, 6),
+                "val_loss":          round(val_loss, 6),
+                "val_roc_auc":       round(metrics["roc_auc"], 6),
+                "val_accuracy":      round(metrics["accuracy"], 6),
+                "val_precision":     round(metrics["precision"], 6),
+                "val_recall":        round(metrics["recall"], 6),
+                "val_f1":            round(metrics["f1"], 6),
+                "val_corrupt_count": val_corrupt,
             })
             log_file.flush()
 
@@ -141,6 +156,11 @@ class Trainer:
                 logger.info("  Early stopping triggered.")
                 break
 
+        # Restore the best checkpoint into memory so the model is ready for evaluate().
+        if self.best_ckpt_path is not None:
+            self.model.load_state_dict(torch.load(self.best_ckpt_path, map_location=self.device))
+            logger.info("Restored best checkpoint: %s", self.best_ckpt_path)
+
         log_file.close()
         logger.info("\nTraining complete. Epoch log saved -> %s", log_path)
 
@@ -160,6 +180,10 @@ class Trainer:
             logger.info("Loaded checkpoint: %s", checkpoint_path)
 
         test_loss, test_preds, test_labels = self._eval_one_epoch(test_loader)
+        if hasattr(test_loader.dataset, "corrupt_count"):
+            n = test_loader.dataset.corrupt_count
+            if n > 0:
+                logger.warning("Test set: %d corrupt image(s) replaced with blank placeholders.", n)
         metrics = self._compute_metrics(test_preds, test_labels)
 
         logger.info("\n--- Test Set Results ---")
@@ -213,6 +237,8 @@ class Trainer:
             if self.cfg.use_amp:
                 self.scaler.scale(loss).backward()
                 if self.cfg.grad_clip > 0:
+                    # Unscale first so the clip threshold applies to float32 gradient
+                    # magnitudes, not the AMP-scaled values.
                     self.scaler.unscale_(self.optimizer)
                     nn.utils.clip_grad_norm_(self.model.parameters(), self.cfg.grad_clip)
                 self.scaler.step(self.optimizer)
@@ -261,8 +287,17 @@ class Trainer:
     def _compute_metrics(probs: np.ndarray, labels: np.ndarray) -> dict:
         preds  = (probs > 0.5).astype(int)
         report = classification_report(labels, preds, output_dict=True, zero_division=0)
+        n_classes = len(np.unique(labels))
+        if n_classes < 2:
+            logger.warning(
+                "Only %d class(es) present in eval set; ROC-AUC is undefined, recording 0.0.",
+                n_classes,
+            )
+            auc = 0.0
+        else:
+            auc = roc_auc_score(labels, probs)
         return {
-            "roc_auc":          roc_auc_score(labels, probs),
+            "roc_auc":          auc,
             "accuracy":         report["accuracy"],
             "precision":        report["macro avg"]["precision"],
             "recall":           report["macro avg"]["recall"],

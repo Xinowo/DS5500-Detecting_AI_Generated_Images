@@ -42,8 +42,7 @@ if [ "$GRID_SEARCH" != "1" ]; then
   echo "Submitted ViT-B/16 linear probe   → job $JOB2"
 
   # ----------------------------------------------------------------
-  # Stage 2: ViT fine-tune — runs after Stage 1, warm-starts from its
-  # checkpoint via the stable 'latest_vit' symlink.
+  # (Future work) Fine-tune: warm-start from linear-probe checkpoint.
   # Uncomment and adjust hyperparameters when ready.
   # ----------------------------------------------------------------
   # SCRATCH_BASE=${SCRATCH_BASE:-/scratch/$USER/DS5500_Data_Capstone}
@@ -55,7 +54,7 @@ if [ "$GRID_SEARCH" != "1" ]; then
   #     --dependency=afterok:$JOB2 \
   #     --export=ALL,PROJECT_ROOT=$REPO_ROOT,ENV_NAME=ds5500-aigi,CONFIG_PATH=configs/vit_b16.yaml \
   #     slurm/train_vit_b16.slurm | awk '{print $NF}')
-  # echo "Submitted ViT-B/16 fine-tune      → job $JOB_FT (after $JOB2, warm-start from Stage 1)"
+  # echo "Submitted ViT-B/16 fine-tune      → job $JOB_FT (after $JOB2, warm-start from linear probe)"
 
 # ==================================================================
 # GRID SEARCH MODE

@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
-from pathlib import Path
 
 from visualization.visualize import plot_confusion_matrix, plot_roc_curve, plot_training_curves
 

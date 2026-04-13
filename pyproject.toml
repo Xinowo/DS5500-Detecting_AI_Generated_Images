@@ -1,3 +1,11 @@
+[project]
+name = "ds5500-detecting-ai-generated-images"
+version = "1.0.0"
+description = "Detecting AI-generated images using pretrained vision models"
+requires-python = ">=3.10"
+
+# pytest configuration — auto-loaded when running `pytest` from the project root.
+# pythonpath = ["."] ensures modules like `data.dataset` resolve correctly.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"
@@ -9,3 +17,16 @@ target-version = ["py312"]
 
 [tool.isort]
 profile = "black"
+
+[tool.flake8]
+max-line-length = 88
+# E221/E251/E272: intentional vertical alignment style
+# W503: line break before binary operator (conflicts with black)
+# E402: module-level imports after sys.path manipulation (intentional)
+extend-ignore = ["E221", "E251", "E272", "W503"]
+per-file-ignores = [
+    "demo/app.py:E402",
+    "training/train.py:E402,E701",
+    "tests/conftest.py:E402",
+    "visualization/gradcam.py:E402",
+]

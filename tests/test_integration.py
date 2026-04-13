@@ -8,9 +8,6 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
-import pandas as pd
-import numpy as np
-import pytest
 from pathlib import Path
 
 from data.dataset import get_dataloaders, prepare_splits
