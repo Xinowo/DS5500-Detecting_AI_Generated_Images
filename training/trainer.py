@@ -60,7 +60,7 @@ class Trainer:
 
     def _build_scheduler(self) -> CosineAnnealingLR:
         cfg          = self.cfg
-        eta_min      = getattr(cfg, 'eta_min', 1e-6)
+        eta_min      = getattr(cfg, 'eta_min', 1e-5)
         warmup       = getattr(cfg, 'warmup_epochs', 0)
         cosine_steps = max(1, cfg.epochs - warmup)
         return CosineAnnealingLR(self.optimizer, T_max=cosine_steps, eta_min=eta_min)

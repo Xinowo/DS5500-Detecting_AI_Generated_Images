@@ -139,6 +139,11 @@ def prepare_splits(
     disk (ensuring exact reproducibility across runs). Otherwise the split is
     computed, and – when ``split_json_path`` is provided – saved to that file.
 
+    Note: The default training pipeline (``training/train.py``) uses CSV
+    persistence and never passes ``split_json_path``. The JSON option is
+    available for programmatic use when a single-file serialisation is
+    preferred.
+
     Args:
         df:              Full CSV DataFrame with columns ``file_name`` and ``label``.
         train_size:      Number of samples to draw from ``df`` before splitting.

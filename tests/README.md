@@ -1,6 +1,7 @@
 # Tests
 
-68 tests covering data loading, models, training, visualization, end-to-end integration, and the demo entry-point.
+72 tests covering data loading, models, training, visualization, end-to-end integration, and the demo entry-point.
+66 pass / 6 skip without gradio.
 Framework: [pytest](https://docs.pytest.org/) with configuration in `pyproject.toml`.
 
 ---

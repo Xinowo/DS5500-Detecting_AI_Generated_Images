@@ -12,9 +12,8 @@ Run from the project root:
 
 from __future__ import annotations
 
-import io
+import logging
 import sys
-from contextlib import redirect_stdout
 from pathlib import Path
 
 # ── Project root on sys.path ─────────────────────────────────────────────────
@@ -83,16 +82,19 @@ def _load_models() -> None:
                 f"Please download the checkpoint or update the path in demo/app.py."
             )
 
-    # Suppress the "Trainable / Total" print from model builders
-    with redirect_stdout(io.StringIO()):
-        resnet = build_resnet50(freeze_backbone=False, num_classes=2)
+    # Suppress the "Trainable / Total" info log emitted by model builders
+    _models_logger = logging.getLogger("models")
+    _prev_level = _models_logger.level
+    _models_logger.setLevel(logging.WARNING)
+
+    resnet = build_resnet50(freeze_backbone=False, num_classes=2)
     state = torch.load(RESNET_CKPT, map_location=DEVICE, weights_only=True)
     resnet.load_state_dict(state)
     resnet.to(DEVICE).eval()
     cam_resnet = GradCAM(model=resnet, target_layers=[resnet.layer4[-1]])
 
-    with redirect_stdout(io.StringIO()):
-        vit = build_vit_b16(freeze_backbone=False, num_classes=2)
+    vit = build_vit_b16(freeze_backbone=False, num_classes=2)
+    _models_logger.setLevel(_prev_level)  # restore original level
     state = torch.load(VIT_CKPT, map_location=DEVICE, weights_only=True)
     vit.load_state_dict(state)
     vit.to(DEVICE).eval()

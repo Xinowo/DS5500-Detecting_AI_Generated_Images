@@ -26,7 +26,7 @@ Both models are loaded with ImageNet-pretrained weights. Their backbones are **f
 
 Why this approach:
 
-- **Small dataset:** our working set is 5,000 images. Training all ~25 M parameters would
+- **Small dataset:** our working set is 5,000 images. Training all 25–86 M parameters would
   overfit quickly.
 - **Efficiency:** training just the head converges in ≤ 20 epochs (minutes on a single GPU).
 - **Representation quality:** a linear probe directly measures how well the frozen pretrained
