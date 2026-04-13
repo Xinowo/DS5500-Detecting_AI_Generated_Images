@@ -13,7 +13,7 @@ logs/
 
 # Local configs (machine-specific paths)
 configs/*.local.yaml
-
+.coverage
 
 # Python cache
 __pycache__/
