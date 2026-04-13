@@ -21,7 +21,8 @@ from PIL import Image
 # Detect whether gradio is installed in the current environment.
 _gradio_available = importlib.util.find_spec("gradio") is not None
 _skip_no_gradio = pytest.mark.skipif(
-    not _gradio_available, reason="gradio not installed in this environment"
+    not _gradio_available,
+    reason="gradio not installed — run `pip install gradio` to enable these 6 tests",
 )
 
 # Resolve the app source file relative to this test file's location.

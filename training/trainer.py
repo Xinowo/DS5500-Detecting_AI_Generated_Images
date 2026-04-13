@@ -89,7 +89,8 @@ class Trainer:
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / f"{cfg.run_name}_{self.timestamp}_history.csv"
         csv_fields = ["epoch", "train_loss", "val_loss", "val_roc_auc",
-                      "val_accuracy", "val_precision", "val_recall", "val_f1"]
+                      "val_accuracy", "val_precision", "val_recall", "val_f1",
+                      "val_corrupt_count"]
         log_file = open(log_path, "w", newline="")
         writer = csv.DictWriter(log_file, fieldnames=csv_fields)
         writer.writeheader()
@@ -102,7 +103,21 @@ class Trainer:
             logger.info("\nEpoch %d/%d", epoch, cfg.epochs)
 
             train_loss = self._train_one_epoch(train_loader)
+
+            # Reset corrupt counter before each val epoch so counts are per-epoch
+            if hasattr(val_loader.dataset, "reset_corrupt_count"):
+                val_loader.dataset.reset_corrupt_count()
+
             val_loss, val_preds, val_labels = self._eval_one_epoch(val_loader)
+
+            val_corrupt = 0
+            if hasattr(val_loader.dataset, "corrupt_count"):
+                val_corrupt = val_loader.dataset.corrupt_count
+                if val_corrupt > 0:
+                    logger.warning(
+                        "  Epoch %d val set: %d corrupt image(s) replaced with blank placeholders.",
+                        epoch, val_corrupt,
+                    )
 
             metrics = self._compute_metrics(val_preds, val_labels)
 
@@ -112,14 +127,15 @@ class Trainer:
             )
 
             writer.writerow({
-                "epoch":        epoch,
-                "train_loss":   round(train_loss, 6),
-                "val_loss":     round(val_loss, 6),
-                "val_roc_auc":  round(metrics["roc_auc"], 6),
-                "val_accuracy": round(metrics["accuracy"], 6),
-                "val_precision": round(metrics["precision"], 6),
-                "val_recall":   round(metrics["recall"], 6),
-                "val_f1":       round(metrics["f1"], 6),
+                "epoch":             epoch,
+                "train_loss":        round(train_loss, 6),
+                "val_loss":          round(val_loss, 6),
+                "val_roc_auc":       round(metrics["roc_auc"], 6),
+                "val_accuracy":      round(metrics["accuracy"], 6),
+                "val_precision":     round(metrics["precision"], 6),
+                "val_recall":        round(metrics["recall"], 6),
+                "val_f1":            round(metrics["f1"], 6),
+                "val_corrupt_count": val_corrupt,
             })
             log_file.flush()
 

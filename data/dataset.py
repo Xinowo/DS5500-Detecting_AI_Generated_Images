@@ -60,6 +60,10 @@ class AIDataset(Dataset):
     def __len__(self) -> int:
         return len(self.dataframe)
 
+    def reset_corrupt_count(self) -> None:
+        """Reset the corrupt-image counter (call before each evaluation epoch)."""
+        self.corrupt_count = 0
+
     def __getitem__(self, idx: int):
         row = self.dataframe.iloc[idx]
         img_name: str = row["file_name"]
