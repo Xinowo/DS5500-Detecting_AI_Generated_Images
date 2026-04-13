@@ -147,6 +147,11 @@ For HPC cluster artifact paths and the `aigi_runs/` layout, see [slurm/README.md
 
 The original test set (`test_data_v2`) has no labels and is not used.
 
+## EDA Findings
+- Dataset: 5,000 images, 50/50 real vs AI-generated split
+- ~33% of images contain human figures
+- AI-generated images show slightly higher mean RGB brightness
+
 ---
 
 ## Methods Overview
