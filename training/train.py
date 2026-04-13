@@ -17,12 +17,11 @@ The script:
 from __future__ import annotations
 
 import argparse
+import logging
 import random
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-
-import os
 
 import numpy as np
 import pandas as pd
@@ -40,6 +39,8 @@ from data.dataset    import prepare_splits, get_dataloaders
 from models          import build_model
 from training.trainer import Trainer
 from visualization.visualize import plot_training_curves, plot_confusion_matrix, plot_roc_curve
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -92,8 +93,37 @@ def load_config(yaml_path: str) -> Config:
         if hasattr(cfg, key):
             setattr(cfg, key, value)
         else:
-            print(f"[Warning] Unknown config key ignored: '{key}'")
+            logger.warning("Unknown config key ignored: '%s'", key)
+    _validate_config(cfg)
     return cfg
+
+
+def _validate_config(cfg: Config) -> None:
+    """Raise ValueError if any hyperparameter value is obviously wrong."""
+    if cfg.epochs <= 0:
+        raise ValueError(f"epochs must be > 0, got {cfg.epochs}")
+    if cfg.batch_size <= 0:
+        raise ValueError(f"batch_size must be > 0, got {cfg.batch_size}")
+    if cfg.lr <= 0:
+        raise ValueError(f"lr must be > 0, got {cfg.lr}")
+    if cfg.backbone_lr <= 0:
+        raise ValueError(f"backbone_lr must be > 0, got {cfg.backbone_lr}")
+    if cfg.patience <= 0:
+        raise ValueError(f"patience must be > 0, got {cfg.patience}")
+    if not (0.0 <= cfg.val_ratio < 1.0):
+        raise ValueError(f"val_ratio must be in [0, 1), got {cfg.val_ratio}")
+    if not (0.0 <= cfg.test_ratio < 1.0):
+        raise ValueError(f"test_ratio must be in [0, 1), got {cfg.test_ratio}")
+    if cfg.val_ratio + cfg.test_ratio >= 1.0:
+        raise ValueError(
+            f"val_ratio + test_ratio must be < 1.0, "
+            f"got {cfg.val_ratio} + {cfg.test_ratio} = {cfg.val_ratio + cfg.test_ratio}"
+        )
+    if cfg.val_ratio == 0.0 and cfg.test_ratio == 0.0:
+        raise ValueError(
+            "val_ratio and test_ratio cannot both be 0; "
+            "at least one evaluation split is required."
+        )
 
 
 def seed_everything(seed: int) -> None:
@@ -101,6 +131,8 @@ def seed_everything(seed: int) -> None:
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +152,7 @@ def main() -> None:
     parser.add_argument("--batch_size",  default=None,  type=int,   help="Override batch_size.")
     parser.add_argument("--lr",          default=None,  type=float, help="Override lr.")
     parser.add_argument("--backbone_lr", default=None,  type=float, help="Override backbone_lr.")
-    parser.add_argument("--weight_decay",default=None,  type=float, help="Override weight_decay.")
+    parser.add_argument("--weight_decay", default=None,  type=float, help="Override weight_decay.")
     parser.add_argument("--patience",    default=None,  type=int,   help="Override patience.")
     parser.add_argument("--run_name",    default=None,              help="Override run_name.")
     parser.add_argument("--unfreeze_last_n_blocks", default=None, type=int, help="Override unfreeze_last_n_blocks.")
@@ -128,6 +160,12 @@ def main() -> None:
     parser.add_argument("--warmup_epochs", default=None, type=int,   help="Override warmup_epochs (epochs before cosine decay starts).")
     parser.add_argument("--checkpoint", default=None, help="Path to a .pth checkpoint to warm-start from (e.g. Stage 1 best model).")
     args = parser.parse_args()
+
+    logging.basicConfig(
+        format="%(asctime)s | %(levelname)-8s | %(name)s — %(message)s",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     cfg = load_config(args.config)
 
@@ -152,8 +190,8 @@ def main() -> None:
     seed_everything(cfg.seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
-    print(f"Config: {cfg}")
+    logger.info("Device: %s", device)
+    logger.info("Config: %s", cfg)
 
     # ------------------------------------------------------------------
     # Data
@@ -168,13 +206,13 @@ def main() -> None:
         df_train = pd.read_csv(train_csv)
         df_val   = pd.read_csv(val_csv)
         df_test  = pd.read_csv(test_csv)
-        print(f"[Data] Loaded pre-existing splits from {splits_dir}/")
+        logger.info("[Data] Loaded pre-existing splits from %s/", splits_dir)
     else:
         # Compute splits from the full CSV (Colab / full-dataset workflow)
         if not cfg.csv_path:
             raise ValueError("csv_path must be set when split CSVs are absent in splits_dir.")
         df = pd.read_csv(cfg.csv_path)
-        print(f"[Data] CSV loaded: {len(df)} rows")
+        logger.info("[Data] CSV loaded: %d rows", len(df))
         df_train, df_val, df_test = prepare_splits(
             df         = df,
             train_size = cfg.train_size,
@@ -184,11 +222,11 @@ def main() -> None:
         )
         splits_dir.mkdir(parents=True, exist_ok=True)
         df_train.to_csv(train_csv, index=False)
-        df_val.to_csv(  val_csv,   index=False)
-        df_test.to_csv( test_csv,  index=False)
-        print(f"[Data] Splits saved to {splits_dir}/")
+        df_val.to_csv(val_csv, index=False)
+        df_test.to_csv(test_csv, index=False)
+        logger.info("[Data] Splits saved to %s/", splits_dir)
 
-    print(f"[Data] train={len(df_train)}  val={len(df_val)}  test={len(df_test)}")
+    logger.info("[Data] train=%d  val=%d  test=%d", len(df_train), len(df_val), len(df_test))
 
     train_loader, val_loader, test_loader = get_dataloaders(
         df_train    = df_train,
@@ -211,11 +249,10 @@ def main() -> None:
     if args.checkpoint:
         state = torch.load(args.checkpoint, map_location=device)
         model.load_state_dict(state)
-        print(f"[Checkpoint] Warm-started from {args.checkpoint}")
+        logger.info("[Checkpoint] Warm-started from %s", args.checkpoint)
 
-    criterion = lambda logits, targets: F.cross_entropy(
-        logits, targets.long(), label_smoothing=cfg.label_smoothing
-    )
+    def criterion(logits, targets):
+        return F.cross_entropy(logits, targets.long(), label_smoothing=cfg.label_smoothing)
 
     # ------------------------------------------------------------------
     # Train
@@ -224,7 +261,7 @@ def main() -> None:
     config_out = Path(cfg.save_dir) / "config.yaml"
     with open(config_out, "w") as _f:
         yaml.dump(vars(cfg), _f, default_flow_style=False, sort_keys=False)
-    print(f"[Config] Saved to {config_out}")
+    logger.info("[Config] Saved to %s", config_out)
 
     trainer = Trainer(model=model, criterion=criterion, cfg=cfg, device=device)
     trainer.fit(train_loader, val_loader)
@@ -266,7 +303,7 @@ def main() -> None:
         title     = f"{cfg.run_name} ROC Curve",
     )
 
-    print(f"\nAll figures saved to {fig_dir}/")
+    logger.info("\nAll figures saved to %s/", fig_dir)
 
     # Explicitly release DataLoader worker processes and GPU memory so the
     # SLURM job exits promptly instead of lingering with an idle GPU.
@@ -274,7 +311,7 @@ def main() -> None:
     del trainer, model
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-    print("[Cleanup] GPU memory released. Job exiting.")
+    logger.info("[Cleanup] GPU memory released. Job exiting.")
 
 
 if __name__ == "__main__":

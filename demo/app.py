@@ -12,9 +12,8 @@ Run from the project root:
 
 from __future__ import annotations
 
-import io
+import logging
 import sys
-from contextlib import redirect_stdout
 from pathlib import Path
 
 # ── Project root on sys.path ─────────────────────────────────────────────────
@@ -75,16 +74,27 @@ def _load_models() -> None:
     if _cache:
         return
 
-    # Suppress the "Trainable / Total" print from model builders
-    with redirect_stdout(io.StringIO()):
-        resnet = build_resnet50(freeze_backbone=False, num_classes=2)
+    # Validate checkpoints exist before attempting to load
+    for model_name, ckpt_path in [("ResNet-50", RESNET_CKPT), ("ViT-B/16", VIT_CKPT)]:
+        if not ckpt_path.exists():
+            raise gr.Error(
+                f"{model_name} checkpoint not found: {ckpt_path}\n"
+                f"Please download the checkpoint or update the path in demo/app.py."
+            )
+
+    # Suppress the "Trainable / Total" info log emitted by model builders
+    _models_logger = logging.getLogger("models")
+    _prev_level = _models_logger.level
+    _models_logger.setLevel(logging.WARNING)
+
+    resnet = build_resnet50(freeze_backbone=False, num_classes=2)
     state = torch.load(RESNET_CKPT, map_location=DEVICE, weights_only=True)
     resnet.load_state_dict(state)
     resnet.to(DEVICE).eval()
     cam_resnet = GradCAM(model=resnet, target_layers=[resnet.layer4[-1]])
 
-    with redirect_stdout(io.StringIO()):
-        vit = build_vit_b16(freeze_backbone=False, num_classes=2)
+    vit = build_vit_b16(freeze_backbone=False, num_classes=2)
+    _models_logger.setLevel(_prev_level)  # restore original level
     state = torch.load(VIT_CKPT, map_location=DEVICE, weights_only=True)
     vit.load_state_dict(state)
     vit.to(DEVICE).eval()
@@ -104,12 +114,18 @@ def _load_models() -> None:
 # Inference helpers
 # ─────────────────────────────────────────────────────────────────────────────
 def _preprocess(pil_img: Image.Image, size: int = 224) -> torch.Tensor:
-    tf = transforms.Compose([
-        transforms.Resize((size, size)),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=_MEAN, std=_STD),
-    ])
-    return tf(pil_img.convert("RGB")).unsqueeze(0).to(DEVICE)
+    try:
+        tf = transforms.Compose([
+            transforms.Resize((size, size)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=_MEAN, std=_STD),
+        ])
+        return tf(pil_img.convert("RGB")).unsqueeze(0).to(DEVICE)
+    except (OSError, Image.UnidentifiedImageError) as exc:
+        raise ValueError(
+            f"Cannot preprocess image: {exc}. "
+            "Please upload a valid JPEG, PNG, or WebP file."
+        ) from exc
 
 
 def _run_model(
@@ -124,26 +140,34 @@ def _run_model(
         label_dict : ``{"AI-Generated": p_ai, "Real": p_real}``
         cam_image  : PIL RGB image with heatmap overlay
     """
-    img_224 = pil_img.convert("RGB").resize((224, 224))
-    tensor  = _preprocess(pil_img)
+    try:
+        img_224 = pil_img.convert("RGB").resize((224, 224))
+        tensor  = _preprocess(pil_img)
 
-    with torch.no_grad():
-        logits = model(tensor)
-        probs  = torch.softmax(logits, dim=1)[0]
+        with torch.no_grad():
+            logits = model(tensor)
+            probs  = torch.softmax(logits, dim=1)[0]
 
-    prob_ai   = float(probs[1])
-    prob_real = float(probs[0])
+        prob_ai   = float(probs[1])
+        prob_real = float(probs[0])
 
-    # Grad-CAM on the AI-Generated class (index 1)
-    grayscale_cam = cam(
-        input_tensor=tensor,
-        targets=[ClassifierOutputTarget(target_class)],
-    )[0]
+        # Grad-CAM on the AI-Generated class (index 1)
+        grayscale_cam = cam(
+            input_tensor=tensor,
+            targets=[ClassifierOutputTarget(target_class)],
+        )[0]
 
-    rgb_arr = np.array(img_224, dtype=np.float32) / 255.0
-    vis_arr = show_cam_on_image(rgb_arr, grayscale_cam, use_rgb=True)
+        rgb_arr = np.array(img_224, dtype=np.float32) / 255.0
+        vis_arr = show_cam_on_image(rgb_arr, grayscale_cam, use_rgb=True)
 
-    return {"AI-Generated": prob_ai, "Real": prob_real}, Image.fromarray(vis_arr)
+        return {"AI-Generated": prob_ai, "Real": prob_real}, Image.fromarray(vis_arr)
+    except torch.cuda.OutOfMemoryError as exc:
+        raise RuntimeError(
+            "GPU out of memory during inference. "
+            "Try restarting the demo or using a smaller image."
+        ) from exc
+    except (RuntimeError, ValueError) as exc:
+        raise RuntimeError(f"Inference failed: {exc}") from exc
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -183,12 +207,20 @@ def predict(pil_img: Image.Image | None):
     if pil_img is None:
         return _BLANK_BADGE, None, None, _BLANK_BADGE, None, None
 
-    _load_models()
+    try:
+        _load_models()
 
-    lbl_r, cam_r = _run_model(pil_img, _cache["resnet"],  _cache["cam_resnet"])
-    lbl_v, cam_v = _run_model(pil_img, _cache["vit"],     _cache["cam_vit"])
+        lbl_r, cam_r = _run_model(pil_img, _cache["resnet"],  _cache["cam_resnet"])
+        lbl_v, cam_v = _run_model(pil_img, _cache["vit"],     _cache["cam_vit"])
 
-    return _verdict_html(lbl_r), lbl_r, cam_r, _verdict_html(lbl_v), lbl_v, cam_v
+        return _verdict_html(lbl_r), lbl_r, cam_r, _verdict_html(lbl_v), lbl_v, cam_v
+    except Exception as exc:  # noqa: BLE001
+        err_html = (
+            '<div style="text-align:center;padding:16px;border-radius:12px;'
+            'background:#fef2f2;border:2px solid #ef4444;color:#b91c1c;">'
+            f'<strong>Error:</strong> {exc}</div>'
+        )
+        return err_html, None, None, err_html, None, None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -360,7 +392,7 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
         # ── (2,2) ResNet-50 Grad-CAM ─────────────────────────────────────────
         with gr.Column(scale=1):
             gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
-            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colors</strong> (red/yellow) indicate higher model attention.</p>')
             with gr.Column(elem_classes="model-card"):
                 gr.HTML('<div class="card-title">ResNet-50 · Attention Heatmap</div>')
                 cam_resnet_out = gr.Image(
@@ -375,7 +407,7 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
         # ── (2,3) ViT Grad-CAM ───────────────────────────────────────────────
         with gr.Column(scale=1):
             gr.HTML('<div class="section-divider"><span>Grad-CAM Attention Maps</span></div>')
-            gr.HTML('<p class="cam-note"><strong>Warmer colours</strong> (red/yellow) indicate higher model attention.</p>')
+            gr.HTML('<p class="cam-note"><strong>Warmer colors</strong> (red/yellow) indicate higher model attention.</p>')
             with gr.Column(elem_classes="model-card"):
                 gr.HTML('<div class="card-title">ViT-B/16 · Attention Heatmap</div>')
                 cam_vit_out = gr.Image(
@@ -417,5 +449,5 @@ if __name__ == "__main__":
         server_name="127.0.0.1",
         server_port=7862,
         share=False,
-        allowed_paths=["../data"],
+        allowed_paths=[str(ROOT / "data")],
     )

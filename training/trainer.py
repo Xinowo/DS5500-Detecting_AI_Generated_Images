@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import os
 from pathlib import Path
-from dataclasses import asdict
 
 import numpy as np
 import torch
@@ -27,6 +27,8 @@ from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Trainer:
@@ -56,9 +58,9 @@ class Trainer:
         self.scheduler = self._build_scheduler()
         self.scaler    = GradScaler() if cfg.use_amp else None
 
-    def _build_scheduler(self):
+    def _build_scheduler(self) -> CosineAnnealingLR:
         cfg          = self.cfg
-        eta_min      = getattr(cfg, 'eta_min', 1e-6)
+        eta_min      = getattr(cfg, 'eta_min', 1e-5)
         warmup       = getattr(cfg, 'warmup_epochs', 0)
         cosine_steps = max(1, cfg.epochs - warmup)
         return CosineAnnealingLR(self.optimizer, T_max=cosine_steps, eta_min=eta_min)
@@ -87,7 +89,8 @@ class Trainer:
         log_dir.mkdir(parents=True, exist_ok=True)
         log_path = log_dir / f"{cfg.run_name}_{self.timestamp}_history.csv"
         csv_fields = ["epoch", "train_loss", "val_loss", "val_roc_auc",
-                      "val_accuracy", "val_precision", "val_recall", "val_f1"]
+                      "val_accuracy", "val_precision", "val_recall", "val_f1",
+                      "val_corrupt_count"]
         log_file = open(log_path, "w", newline="")
         writer = csv.DictWriter(log_file, fieldnames=csv_fields)
         writer.writeheader()
@@ -97,29 +100,42 @@ class Trainer:
         self.best_ckpt_path = None
 
         for epoch in range(1, cfg.epochs + 1):
-            print(f"\nEpoch {epoch}/{cfg.epochs}")
+            logger.info("\nEpoch %d/%d", epoch, cfg.epochs)
 
             train_loss = self._train_one_epoch(train_loader)
+
+            # Reset corrupt counter before each val epoch so counts are per-epoch
+            if hasattr(val_loader.dataset, "reset_corrupt_count"):
+                val_loader.dataset.reset_corrupt_count()
+
             val_loss, val_preds, val_labels = self._eval_one_epoch(val_loader)
+
+            val_corrupt = 0
+            if hasattr(val_loader.dataset, "corrupt_count"):
+                val_corrupt = val_loader.dataset.corrupt_count
+                if val_corrupt > 0:
+                    logger.warning(
+                        "  Epoch %d val set: %d corrupt image(s) replaced with blank placeholders.",
+                        epoch, val_corrupt,
+                    )
 
             metrics = self._compute_metrics(val_preds, val_labels)
 
-            print(
-                f"  Train Loss: {train_loss:.4f} | "
-                f"Val Loss: {val_loss:.4f} | "
-                f"Val AUC: {metrics['roc_auc']:.4f} | "
-                f"Val Acc: {metrics['accuracy']:.4f}"
+            logger.info(
+                "  Train Loss: %.4f | Val Loss: %.4f | Val AUC: %.4f | Val Acc: %.4f",
+                train_loss, val_loss, metrics["roc_auc"], metrics["accuracy"],
             )
 
             writer.writerow({
-                "epoch":        epoch,
-                "train_loss":   round(train_loss, 6),
-                "val_loss":     round(val_loss, 6),
-                "val_roc_auc":  round(metrics["roc_auc"], 6),
-                "val_accuracy": round(metrics["accuracy"], 6),
-                "val_precision":round(metrics["precision"], 6),
-                "val_recall":   round(metrics["recall"], 6),
-                "val_f1":       round(metrics["f1"], 6),
+                "epoch":             epoch,
+                "train_loss":        round(train_loss, 6),
+                "val_loss":          round(val_loss, 6),
+                "val_roc_auc":       round(metrics["roc_auc"], 6),
+                "val_accuracy":      round(metrics["accuracy"], 6),
+                "val_precision":     round(metrics["precision"], 6),
+                "val_recall":        round(metrics["recall"], 6),
+                "val_f1":            round(metrics["f1"], 6),
+                "val_corrupt_count": val_corrupt,
             })
             log_file.flush()
 
@@ -131,17 +147,22 @@ class Trainer:
                 patience_counter    = 0
                 self.best_ckpt_path = Path(cfg.save_dir) / f"best_model_{self.timestamp}.pth"
                 torch.save(self.model.state_dict(), self.best_ckpt_path)
-                print(f"  Checkpoint saved -> {self.best_ckpt_path}")
+                logger.info("  Checkpoint saved -> %s", self.best_ckpt_path)
             else:
                 patience_counter += 1
-                print(f"  No improvement. Patience {patience_counter}/{cfg.patience}")
+                logger.info("  No improvement. Patience %d/%d", patience_counter, cfg.patience)
 
             if patience_counter >= cfg.patience:
-                print(f"  Early stopping triggered.")
+                logger.info("  Early stopping triggered.")
                 break
 
+        # Restore the best checkpoint into memory so the model is ready for evaluate().
+        if self.best_ckpt_path is not None:
+            self.model.load_state_dict(torch.load(self.best_ckpt_path, map_location=self.device))
+            logger.info("Restored best checkpoint: %s", self.best_ckpt_path)
+
         log_file.close()
-        print(f"\nTraining complete. Epoch log saved -> {log_path}")
+        logger.info("\nTraining complete. Epoch log saved -> %s", log_path)
 
     def evaluate(self, test_loader: DataLoader, checkpoint_path: str | Path | None = None) -> dict:
         """Evaluate the model on a held-out test set.
@@ -156,19 +177,23 @@ class Trainer:
         """
         if checkpoint_path is not None:
             self.model.load_state_dict(torch.load(checkpoint_path, map_location=self.device))
-            print(f"Loaded checkpoint: {checkpoint_path}")
+            logger.info("Loaded checkpoint: %s", checkpoint_path)
 
         test_loss, test_preds, test_labels = self._eval_one_epoch(test_loader)
+        if hasattr(test_loader.dataset, "corrupt_count"):
+            n = test_loader.dataset.corrupt_count
+            if n > 0:
+                logger.warning("Test set: %d corrupt image(s) replaced with blank placeholders.", n)
         metrics = self._compute_metrics(test_preds, test_labels)
 
-        print("\n--- Test Set Results ---")
-        print(f"  Loss:      {test_loss:.4f}")
-        print(f"  ROC AUC:   {metrics['roc_auc']:.4f}")
-        print(f"  Accuracy:  {metrics['accuracy']:.4f}")
-        print(f"  Precision: {metrics['precision']:.4f}")
-        print(f"  Recall:    {metrics['recall']:.4f}")
-        print(f"  F1-Score:  {metrics['f1']:.4f}")
-        print(f"  Confusion Matrix:\n{metrics['confusion_matrix']}")
+        logger.info("\n--- Test Set Results ---")
+        logger.info("  Loss:      %.4f", test_loss)
+        logger.info("  ROC AUC:   %.4f", metrics["roc_auc"])
+        logger.info("  Accuracy:  %.4f", metrics["accuracy"])
+        logger.info("  Precision: %.4f", metrics["precision"])
+        logger.info("  Recall:    %.4f", metrics["recall"])
+        logger.info("  F1-Score:  %.4f", metrics["f1"])
+        logger.info("  Confusion Matrix:\n%s", metrics["confusion_matrix"])
 
         result   = {"loss": test_loss, **metrics}
         out      = {k: float(v) if not hasattr(v, "tolist") else v.tolist() for k, v in result.items()}
@@ -176,12 +201,12 @@ class Trainer:
         json_path = Path(self.cfg.save_dir) / f"test_metrics_{ts}.json"
         with open(json_path, "w") as fh:
             json.dump(out, fh, indent=2)
-        print(f"  Test metrics saved -> {json_path}")
+        logger.info("  Test metrics saved -> %s", json_path)
 
         # Save per-sample probs and labels for ROC curve plotting
         npz_path = Path(self.cfg.save_dir) / f"test_preds_{ts}.npz"
         np.savez(npz_path, probs=test_preds, labels=test_labels)
-        print(f"  Test predictions saved -> {npz_path}")
+        logger.info("  Test predictions saved -> %s", npz_path)
         return result
 
     # ------------------------------------------------------------------
@@ -190,6 +215,7 @@ class Trainer:
     def _train_one_epoch(self, loader: DataLoader) -> float:
         self.model.train()
         total_loss = 0.0
+        skipped    = 0
 
         for inputs, labels in loader:
             inputs = inputs.to(self.device)
@@ -201,9 +227,18 @@ class Trainer:
                 logits = self.model(inputs)
                 loss   = self.criterion(logits, labels)
 
+            if not torch.isfinite(loss):
+                logger.warning(
+                    "Non-finite loss (%.6g) detected; skipping batch.", loss.item()
+                )
+                skipped += 1
+                continue
+
             if self.cfg.use_amp:
                 self.scaler.scale(loss).backward()
                 if self.cfg.grad_clip > 0:
+                    # Unscale first so the clip threshold applies to float32 gradient
+                    # magnitudes, not the AMP-scaled values.
                     self.scaler.unscale_(self.optimizer)
                     nn.utils.clip_grad_norm_(self.model.parameters(), self.cfg.grad_clip)
                 self.scaler.step(self.optimizer)
@@ -216,7 +251,11 @@ class Trainer:
 
             total_loss += loss.item()
 
-        return total_loss / len(loader)
+        valid_batches = len(loader) - skipped
+        if valid_batches == 0:
+            logger.error("All batches skipped due to non-finite loss — check your data and learning rate.")
+            return float("nan")
+        return total_loss / valid_batches
 
     def _eval_one_epoch(
         self, loader: DataLoader
@@ -248,8 +287,17 @@ class Trainer:
     def _compute_metrics(probs: np.ndarray, labels: np.ndarray) -> dict:
         preds  = (probs > 0.5).astype(int)
         report = classification_report(labels, preds, output_dict=True, zero_division=0)
+        n_classes = len(np.unique(labels))
+        if n_classes < 2:
+            logger.warning(
+                "Only %d class(es) present in eval set; ROC-AUC is undefined, recording 0.0.",
+                n_classes,
+            )
+            auc = 0.0
+        else:
+            auc = roc_auc_score(labels, probs)
         return {
-            "roc_auc":          roc_auc_score(labels, probs),
+            "roc_auc":          auc,
             "accuracy":         report["accuracy"],
             "precision":        report["macro avg"]["precision"],
             "recall":           report["macro avg"]["recall"],

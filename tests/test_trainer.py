@@ -10,7 +10,7 @@ from pathlib import Path
 from torch.utils.data import DataLoader, TensorDataset
 
 from training.trainer import Trainer
-from training.train import seed_everything
+from training.train import seed_everything, _validate_config, Config
 from tests.conftest import MinimalConfig
 
 
@@ -147,3 +147,28 @@ class TestTrainerFit:
         trainer.fit(train_loader, val_loader)
         assert trainer.best_ckpt_path is not None
         assert Path(trainer.best_ckpt_path).exists()
+
+
+# ---------------------------------------------------------------------------
+# _validate_config
+# ---------------------------------------------------------------------------
+
+class TestValidateConfig:
+    def test_valid_config_passes(self):
+        cfg = Config()  # all defaults are valid
+        _validate_config(cfg)  # should not raise
+
+    def test_zero_epochs_raises(self):
+        cfg = Config(epochs=0)
+        with pytest.raises(ValueError, match="epochs"):
+            _validate_config(cfg)
+
+    def test_negative_lr_raises(self):
+        cfg = Config(lr=-1e-3)
+        with pytest.raises(ValueError, match="lr"):
+            _validate_config(cfg)
+
+    def test_val_test_ratio_sum_raises(self):
+        cfg = Config(val_ratio=0.5, test_ratio=0.6)
+        with pytest.raises(ValueError, match="val_ratio"):
+            _validate_config(cfg)

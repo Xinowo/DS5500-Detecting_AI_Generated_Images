@@ -1,5 +1,5 @@
 """
-Visualisation utilities for AIGI-Detection.
+Visualization utilities for AIGI-Detection.
 
 Functions:
   - plot_confusion_matrix  : Heatmap of the 2x2 confusion matrix.
@@ -9,11 +9,14 @@ Functions:
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import roc_curve, auc
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +150,7 @@ def _save_or_show(fig: plt.Figure, save_path: str | Path | None) -> None:
         save_path = Path(save_path)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(save_path, dpi=150, bbox_inches="tight")
-        print(f"Figure saved to {save_path}")
+        logger.info("Figure saved to %s", save_path)
     plt.close(fig)
 
 
@@ -223,6 +226,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-    plt.close(fig)
-else:
-    plt.show()

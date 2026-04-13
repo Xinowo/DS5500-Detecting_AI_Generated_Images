@@ -8,8 +8,11 @@ freezes the transformer backbone for linear-probe training.
 
 from __future__ import annotations
 
+import logging
 import torch.nn as nn
 import torchvision.models as tv_models
+
+logger = logging.getLogger(__name__)
 
 
 def build_vit_b16(
@@ -57,4 +60,4 @@ def build_vit_b16(
 def _print_param_summary(model: nn.Module) -> None:
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     total     = sum(p.numel() for p in model.parameters())
-    print(f"[ViT-B/16]  Trainable: {trainable:,} / Total: {total:,} ({trainable / total:.4%})")
+    logger.info("[ViT-B/16]  Trainable: %s / Total: %s (%.4f%%)", f"{trainable:,}", f"{total:,}", trainable / total * 100)
