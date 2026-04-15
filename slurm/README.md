@@ -25,6 +25,8 @@ Default per-user paths used by the scripts:
 | Run artifacts | `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` |
 | SLURM logs | `/scratch/$USER/DS5500_Data_Capstone/aigi_logs/` |
 
+Here, replace `<RUN_ID>` with the actual run folder name for that training job.
+
 ---
 
 ## Submitting jobs
