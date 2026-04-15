@@ -11,7 +11,8 @@ The script:
   4. Builds DataLoaders.
   5. Instantiates the model via model_factory.
   6. Runs the Trainer.fit() loop.
-  7. Runs Trainer.evaluate() on the test set and saves metrics to outputs/.
+  7. Runs Trainer.evaluate() on the test set and saves figures/metrics under
+     the configured outputs directory (``cfg.outputs_dir``).
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Config:
     # Data
-    data_root:   str   = "data/sampled_data_5k"  # base dir; sub-dirs train/validation/test auto-detected
+    data_root:   str   = "data/train_data"  # default primary image root; override to sampled_data_5k for lighter local runs
     splits_dir:  str   = "data/splits"            # dir with df_train/val/test.csv; if CSVs exist they are loaded directly
     csv_path:    str   = ""                        # full dataset CSV; only used when splits_dir CSVs are absent
     train_size:  int | None = None                 # None = use all rows in csv_path (ignored when loading from splits_dir)
@@ -81,7 +82,7 @@ class Config:
     # Misc
     seed:        int = 42
     save_dir:    str = "checkpoints"
-    outputs_dir: str = "outputs"  # base dir for metrics/figures/logs
+    outputs_dir: str = "outputs"  # base dir for run-specific metrics/figures/logs
 
 
 def load_config(yaml_path: str) -> Config:

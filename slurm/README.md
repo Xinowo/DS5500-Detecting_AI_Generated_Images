@@ -21,7 +21,7 @@ Default per-user paths used by the scripts:
 
 | Resource | Path |
 |---|---|
-| Data root | `/scratch/$USER/DS5500_Data_Capstone/data/sampled_data_5k` |
+| Data root | `/scratch/$USER/DS5500_Data_Capstone/data/train_data` |
 | Run artifacts | `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/` |
 | SLURM logs | `/scratch/$USER/DS5500_Data_Capstone/aigi_logs/` |
 
@@ -58,7 +58,7 @@ mkdir -p "$BASE_DIR/checkpoints" "$BASE_DIR/outputs" "$SCRATCH_BASE/aigi_logs"
 
 python -u -m training.train \
     --config configs/vit_b16.yaml \
-    --data_root $SCRATCH_BASE/data/sampled_data_5k \
+    --data_root $SCRATCH_BASE/data/train_data \
     --num_workers 1 \
     --save_dir "$BASE_DIR/checkpoints" \
     --outputs_dir "$BASE_DIR/outputs" \
@@ -94,7 +94,7 @@ python -u -m training.train \
     --backbone_lr 1e-5 \
     --lr 1e-4 \
     --run_name vit-b16-ft \
-    --data_root $SCRATCH_BASE/data/sampled_data_5k \
+    --data_root $SCRATCH_BASE/data/train_data \
     --num_workers 1 \
     --save_dir "$BASE_DIR/checkpoints" \
     --outputs_dir "$BASE_DIR/outputs" \
@@ -172,7 +172,7 @@ done
 | `--num_workers` | int | DataLoader workers (1 on HPC, 0 for CPU-only) |
 | `--data_root` | str | Root folder containing train/val/test sub-dirs |
 | `--save_dir` | str | Checkpoints directory |
-| `--outputs_dir` | str | Metrics CSVs and figures directory |
+| `--outputs_dir` | str | Base directory for run artifacts such as `metrics/*.csv` and `figures/*.png` |
 
 ---
 
@@ -186,7 +186,7 @@ Each run writes to `/scratch/$USER/DS5500_Data_Capstone/aigi_runs/<RUN_ID>/`:
 - `test_preds_<timestamp>.npz`
 - `config.yaml`
 
-**`outputs/`**
+**`<outputs_dir>/`**
 - `metrics/*_history.csv` — per-epoch train/val metrics
 - `figures/*.png` — training curves, confusion matrix, ROC curve
 

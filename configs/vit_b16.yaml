@@ -3,7 +3,7 @@
 # To fine-tune last transformer blocks in the future, set unfreeze_last_n_blocks > 0
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-data_root:   "data/sampled_data_5k"
+data_root:   "data/train_data"
 splits_dir:  "data/splits"
 num_workers: 1
 
@@ -29,5 +29,4 @@ warmup_epochs:   0        # epochs to hold lr constant before cosine decay begin
 run_name:    "vit-b16-5k-linear-probe"
 seed:        42
 save_dir:    "checkpoints/vit_b16"
-outputs_dir: "outputs"
-
+outputs_dir: "outputs/vit_b16"

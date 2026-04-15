@@ -22,11 +22,11 @@ python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg
 
 # Single image — ResNet-50 only, save PNG
 python visualization/gradcam.py --image data/sampled_data_5k/test/some_image.jpg \
-    --model resnet50 --save-dir outputs/gradcam/
+    --model resnet50 --save-dir <outputs_dir>/gradcam/
 
 # Whole folder — ViT-B/16 only, save all figures
 python visualization/gradcam.py --folder data/sampled_data_5k/test/ \
-    --model vit --save-dir outputs/gradcam/
+    --model vit --save-dir <outputs_dir>/gradcam/
 
 # Custom checkpoint paths
 python visualization/gradcam.py --image path/to/image.jpg --model both \
@@ -50,7 +50,8 @@ python visualization/gradcam.py --image path/to/image.jpg --model both \
 
 ## Training plots (`visualize.py`)
 
-Called automatically at the end of each training run.  Figures are saved to `outputs/figures/`.
+Called automatically at the end of each training run. Figures are saved under
+the configured `outputs_dir`, typically in `<outputs_dir>/figures/`.
 
 | File | Contents |
 |---|---|
@@ -71,7 +72,7 @@ Called automatically at the end of each training run.  Figures are saved to `out
 | `test_metrics_<timestamp>.json` | Test accuracy, AUC, F1, confusion matrix |
 | `test_preds_<timestamp>.npz` | Per-sample predicted probabilities and true labels |
 
-### `outputs/metrics/`
+### `<outputs_dir>/metrics/`
 
 | File | Contents |
 |---|---|

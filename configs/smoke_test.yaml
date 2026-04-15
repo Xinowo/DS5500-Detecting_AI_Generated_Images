@@ -2,7 +2,7 @@
 # Usage: python -m training.train --config configs/smoke_test.yaml
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-data_root:   "data/sampled_data_5k"
+data_root:   "data/train_data"
 splits_dir:  "data/splits"
 num_workers: 0          # must be 0 on Windows CPU to avoid multiprocessing issues
 
@@ -26,4 +26,4 @@ use_amp:         false   # GradScaler is CUDA-only; must be false on CPU
 run_name:    "smoke-test"
 seed:        42
 save_dir:    "checkpoints/smoke_test"
-outputs_dir: "outputs"
+outputs_dir: "outputs/smoke_test"

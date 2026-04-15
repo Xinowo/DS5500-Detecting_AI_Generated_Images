@@ -1,6 +1,6 @@
 # Large image data (too large for git)
-data/sampled_data_5k/
 docs/
+*.jpg
 
 
 # Model checkpoints

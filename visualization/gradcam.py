@@ -26,9 +26,9 @@ CLI
   # Single image, both models side-by-side
   python visualization/gradcam.py --image path/to/image.jpg --model both
 
-  # Whole folder, ResNet-50 only, save figures to outputs/gradcam/
+  # Whole folder, ResNet-50 only, save figures to <outputs_dir>/gradcam/
   python visualization/gradcam.py --folder data/my_imgs/ --model resnet50 \\
-      --save-dir outputs/gradcam/
+      --save-dir <outputs_dir>/gradcam/
 """
 
 from __future__ import annotations

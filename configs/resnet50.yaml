@@ -3,7 +3,7 @@
 # To fine-tune last blocks in the future, increase unfreeze_last_n_blocks (1-4)
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-data_root:   "data/sampled_data_5k"
+data_root:   "data/train_data"
 splits_dir:  "data/splits"
 num_workers: 2
 
@@ -29,5 +29,4 @@ warmup_epochs:   0
 run_name:    "resnet50-5k-linear-probe"
 seed:        42
 save_dir:    "checkpoints/resnet50"
-outputs_dir: "outputs"
-
+outputs_dir: "outputs/resnet50"

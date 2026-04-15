@@ -27,7 +27,22 @@ data/sampled_data_5k/
 └── test/         # 1,000 images
 ```
 
-This folder is gitignored. Download from Kaggle and place images here before training.
+This folder is gitignored and optional.
+
+Recommended workflow:
+
+1. Download the Kaggle labeled images and extract them into `data/train_data/`.
+2. Use the committed split CSVs in `data/splits/`.
+3. If you want a smaller local dataset, copy the images referenced by those CSVs into `data/sampled_data_5k/{train,validation,test}`.
+
+If you do not create `data/sampled_data_5k/`, the project can still run:
+
+- training can use `data/train_data/` together with `data/splits/`
+- the demo can still run if checkpoints exist
+- the demo can still load example images from `data/train_data/` and `data/splits/`
+
+The default training configs now use `data/train_data` as their `data_root`.
+Only override to `data/sampled_data_5k` if that optional subset exists locally.
 
 ---
 

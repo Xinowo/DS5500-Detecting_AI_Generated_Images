@@ -16,7 +16,27 @@ python -m training.train --config configs/vit_b16.yaml
 ```
 
 The script automatically saves the best checkpoint to `save_dir` and writes
-training-curve / evaluation plots to `outputs_dir`.
+training curves and evaluation plots under the configured `outputs_dir`
+(typically into `metrics/` and `figures/` subfolders inside that directory).
+
+Two local data layouts are supported:
+
+1. `data/train_data/` together with the committed split CSVs in `data/splits/`. This is now the default in the shipped configs.
+2. `data/sampled_data_5k/{train,validation,test}` for lighter local runs, enabled by overriding `--data_root data/sampled_data_5k`.
+
+Example for the default full Kaggle image folder:
+
+```bash
+python -m training.train --config configs/vit_b16.yaml
+```
+
+Example override for the optional 5k subset:
+
+```bash
+python -m training.train \
+    --config configs/vit_b16.yaml \
+    --data_root data/sampled_data_5k
+```
 
 ---
 
@@ -28,8 +48,8 @@ Individual fields can be overridden on the command line (e.g. `--epochs 5`).
 
 | Field | Description |
 |-------|-------------|
-| `data_root` | Path to the image folder (`data/sampled_data_5k`) |
-| `splits_dir` | Path to the CSV split files (`data/splits`) |
+| `data_root` | Path to the image folder. Defaults to `data/train_data`; can be overridden to `data/sampled_data_5k` for lighter local runs. |
+| `splits_dir` | Path to the CSV split files (`data/splits`). When `df_train.csv`, `df_val.csv`, and `df_test.csv` exist, they are loaded directly. |
 | `model_name` | `"resnet50"` or `"vit_b_16"` |
 | `freeze_backbone` | `true` = linear probe (head-only training) |
 | `unfreeze_last_n_blocks` | Backbone blocks to unfreeze from the end; `0` = head only |
@@ -46,7 +66,7 @@ Individual fields can be overridden on the command line (e.g. `--epochs 5`).
 | `warmup_epochs` | Epochs to hold LR constant before cosine decay starts |
 | `seed` | Global random seed — set once at startup |
 | `save_dir` | Directory to write the best checkpoint `.pth` file |
-| `outputs_dir` | Directory to write training curves and evaluation plots |
+| `outputs_dir` | Base directory for run artifacts such as `metrics/*.csv` and `figures/*.png` |
 
 ---
 
@@ -62,7 +82,7 @@ Three metrics are tracked during training and reported at final test evaluation:
 
 Metrics are computed on the validation set at the end of every epoch and on the
 test set once after training completes. The training-history CSV is saved to
-`outputs_dir/metrics/`. The final test-metrics JSON and per-sample prediction
+`<outputs_dir>/metrics/`. The final test-metrics JSON and per-sample prediction
 NPZ are saved to `save_dir` alongside the best checkpoint.
 
 > **Early stopping** monitors **validation loss** (not ROC-AUC). Training halts

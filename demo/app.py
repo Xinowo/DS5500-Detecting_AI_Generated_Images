@@ -12,6 +12,7 @@ Run from the project root:
 
 from __future__ import annotations
 
+import csv
 import logging
 import sys
 from pathlib import Path
@@ -43,14 +44,40 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 _MEAN = [0.485, 0.456, 0.406]
 _STD  = [0.229, 0.224, 0.225]
 
+def _spread_sample(paths: list[Path], n: int = 6) -> list[str]:
+    """Pick up to ``n`` paths spaced across the input list."""
+    if not paths:
+        return []
+
+    step = max(1, len(paths) // n)
+    return [str(p) for p in paths[::step][:n]]
+
+
+def _load_example_images() -> list[str]:
+    """Load demo example images from the sampled test folder or split CSV."""
+    examples_dir = ROOT / "data" / "sampled_data_5k" / "test"
+    if examples_dir.exists():
+        return _spread_sample(sorted(examples_dir.glob("*.jpg")))
+
+    train_data_dir = ROOT / "data" / "train_data"
+    test_split_csv = ROOT / "data" / "splits" / "df_test.csv"
+    if not train_data_dir.exists() or not test_split_csv.exists():
+        return []
+
+    example_paths: list[Path] = []
+    with test_split_csv.open("r", newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            file_name = Path(row["file_name"]).name
+            img_path = train_data_dir / file_name
+            if img_path.exists():
+                example_paths.append(img_path)
+
+    return _spread_sample(example_paths)
+
+
 # Pick a handful of example images from the test split (shown at the bottom)
-_EXAMPLES_DIR = ROOT / "data" / "sampled_data_5k" / "test"
-EXAMPLE_IMAGES: list[str] = []
-if _EXAMPLES_DIR.exists():
-    _all = sorted(_EXAMPLES_DIR.glob("*.jpg"))
-    # Spread picks across the folder so examples look visually varied
-    _step = max(1, len(_all) // 6)
-    EXAMPLE_IMAGES = [str(p) for p in _all[::_step][:6]]
+EXAMPLE_IMAGES: list[str] = _load_example_images()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Lazy model cache — loaded once on first inference

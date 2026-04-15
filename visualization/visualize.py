@@ -163,11 +163,12 @@ def main() -> None:
     Usage::
 
         python -m visualization.visualize \\
-            --history_csv    outputs/metrics/resnet50-5k_20260307_143022_history.csv \\
+            --history_csv    <outputs_dir>/metrics/resnet50-5k_20260307_143022_history.csv \\
             --checkpoint_dir checkpoints/resnet50 \\
             --timestamp      20260307_143022
 
-    Saves three figures to ``outputs/figures/``:
+    Saves three figures to the ``figures/`` sibling directory that sits next to
+    the provided ``metrics/`` folder:
       ``<timestamp>_<run_name>_training_curves.png``
       ``<timestamp>_<run_name>_confusion_matrix.png``
       ``<timestamp>_<run_name>_roc_curve.png``
@@ -187,14 +188,15 @@ def main() -> None:
 
     ts       = args.timestamp
     ckpt_dir = Path(args.checkpoint_dir)
-    fig_dir  = Path("outputs/figures")
+    history_csv = Path(args.history_csv)
+    fig_dir  = history_csv.parent.parent / "figures"
 
     # Derive run_name from CSV stem: <run_name>_<timestamp>_history
-    csv_stem = Path(args.history_csv).stem              # e.g. "resnet50-5k_20260307_143022_history"
+    csv_stem = history_csv.stem                         # e.g. "resnet50-5k_20260307_143022_history"
     run_name = csv_stem.replace(f"_{ts}_history", "")  # e.g. "resnet50-5k"
 
     # 1. Training curves
-    df = pd.read_csv(args.history_csv)
+    df = pd.read_csv(history_csv)
     plot_training_curves(
         history   = df.to_dict(orient="list"),
         save_path = fig_dir / f"{ts}_{run_name}_training_curves.png",

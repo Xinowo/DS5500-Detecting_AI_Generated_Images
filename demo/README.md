@@ -18,7 +18,8 @@ Grad-CAM heatmaps alongside the classification verdict.
    checkpoints/vit_b16/best_model_20260317_220741.pth
    ```
    If you trained locally, they are created automatically by the training script.
-   If you downloaded pre-trained artifacts, copy the `.pth` files to those paths.
+   If you want to use the provided pretrained artifacts, download `checkpoints.zip`
+   from the repo's **GitHub Releases** section and extract it at the repo root.
 
 ---
 
@@ -48,7 +49,8 @@ Open that URL in any browser.
 | **ResNet-50 Grad-CAM** | Heatmap showing which spatial regions influenced ResNet-50's decision |
 | **ViT-B/16 Grad-CAM** | Heatmap showing which patch regions influenced ViT-B/16's decision |
 
-Example images from `data/sampled_data_5k/test/` are pre-loaded as quick-start examples
-(only available if the data folder exists locally).
+Example images are loaded from `data/sampled_data_5k/test/` if that optional
+subset exists locally; otherwise the app falls back to `data/train_data/` plus
+`data/splits/`.
 
 > CPU-only machines are fully supported — inference will be slower but functional.

@@ -264,7 +264,7 @@ def get_dataloaders(
         df_train:    Training split DataFrame.
         df_val:      Validation split DataFrame.
         df_test:     Test split DataFrame.
-        data_root:   Base directory for image files, e.g. ``data/sampled_data_5k``.
+        data_root:   Base directory for image files, e.g. ``data/train_data``.
         batch_size:  Samples per batch.
         num_workers: Worker processes for data loading.
 
