@@ -6,6 +6,7 @@ docs/
 # Model checkpoints
 checkpoints/
 aigi_runs/
+*.zip
 
 # Training & evaluation outputs
 outputs/
