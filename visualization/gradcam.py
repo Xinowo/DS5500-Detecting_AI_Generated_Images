@@ -7,10 +7,10 @@ Supported models
 - ViT-B/16   : target layer ``model.encoder.layers[-1].ln_1``
                (uses a reshape transform to convert patch tokens → spatial map)
 
-Default checkpoint paths (relative to the project root)
----------------------------------------------------------
-- ResNet-50 : checkpoints/resnet50/best_model_resnet50.pth
-- ViT-B/16  : checkpoints/vit_b16/best_model_20260317_220741.pth
+Default checkpoint discovery (relative to the project root)
+-----------------------------------------------------------
+- ResNet-50 : newest file matching ``checkpoints/resnet50/best_model*.pth``
+- ViT-B/16  : newest file matching ``checkpoints/vit_b16/best_model*.pth``
 
 Public API
 ----------
@@ -60,8 +60,8 @@ from models.vit import build_vit_b16
 # ---------------------------------------------------------------------------
 _ROOT = Path(__file__).resolve().parents[1]
 
-RESNET_CHECKPOINT: Path = _ROOT / "checkpoints" / "resnet50" / "best_model_resnet50.pth"
-VIT_CHECKPOINT:    Path = _ROOT / "checkpoints" / "vit_b16"  / "best_model_20260317_220741.pth"
+RESNET_CHECKPOINT_DIR: Path = _ROOT / "checkpoints" / "resnet50"
+VIT_CHECKPOINT_DIR:    Path = _ROOT / "checkpoints" / "vit_b16"
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 
@@ -73,6 +73,24 @@ _STD  = [0.229, 0.224, 0.225]
 # ---------------------------------------------------------------------------
 # Model loaders
 # ---------------------------------------------------------------------------
+
+def _find_best_checkpoint(ckpt_dir: str | Path, model_label: str) -> Path:
+    """Return the newest checkpoint matching ``best_model*.pth`` in ``ckpt_dir``."""
+    ckpt_dir = Path(ckpt_dir)
+    if not ckpt_dir.exists():
+        raise FileNotFoundError(
+            f"{model_label} checkpoint directory not found: {ckpt_dir}. "
+            "Please download the checkpoints or train the model first."
+        )
+
+    candidates = sorted(ckpt_dir.glob("best_model*.pth"))
+    if not candidates:
+        raise FileNotFoundError(
+            f"No checkpoint matching 'best_model*.pth' was found in: {ckpt_dir}. "
+            "Please download the checkpoints or train the model first."
+        )
+
+    return max(candidates, key=lambda path: path.stat().st_mtime)
 
 def load_resnet50(path: str | Path, device: str = "cpu") -> nn.Module:
     """Load the trained ResNet-50 checkpoint.
@@ -201,8 +219,8 @@ def visualize(
     img_path: str | Path,
     model_type: str = "both",
     *,
-    resnet_ckpt: str | Path = RESNET_CHECKPOINT,
-    vit_ckpt:    str | Path = VIT_CHECKPOINT,
+    resnet_ckpt: str | Path | None = None,
+    vit_ckpt:    str | Path | None = None,
     save_dir:    Optional[str | Path] = None,
     device:      Optional[str] = None,
     image_size:  int = 224,
@@ -223,6 +241,10 @@ def visualize(
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model_type = model_type.lower()
+    if resnet_ckpt is None:
+        resnet_ckpt = _find_best_checkpoint(RESNET_CHECKPOINT_DIR, "ResNet-50")
+    if vit_ckpt is None:
+        vit_ckpt = _find_best_checkpoint(VIT_CHECKPOINT_DIR, "ViT-B/16")
 
     panels: list[tuple[str, np.ndarray, np.ndarray, float]] = []
 
@@ -284,8 +306,8 @@ def visualize_folder(
     folder: str | Path,
     model_type: str = "both",
     *,
-    resnet_ckpt: str | Path = RESNET_CHECKPOINT,
-    vit_ckpt:    str | Path = VIT_CHECKPOINT,
+    resnet_ckpt: str | Path | None = None,
+    vit_ckpt:    str | Path | None = None,
     save_dir:    Optional[str | Path] = None,
     device:      Optional[str] = None,
     image_size:  int = 224,
@@ -301,6 +323,10 @@ def visualize_folder(
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model_type = model_type.lower()
+    if resnet_ckpt is None:
+        resnet_ckpt = _find_best_checkpoint(RESNET_CHECKPOINT_DIR, "ResNet-50")
+    if vit_ckpt is None:
+        vit_ckpt = _find_best_checkpoint(VIT_CHECKPOINT_DIR, "ViT-B/16")
 
     # Build models once, reuse across images
     resnet = cam_r = vit = cam_v = None
@@ -386,12 +412,12 @@ def _parse_args() -> argparse.Namespace:
         help="Which model(s) to use (default: both).",
     )
     parser.add_argument(
-        "--resnet-ckpt", type=str, default=str(RESNET_CHECKPOINT),
-        help="Path to the ResNet-50 checkpoint.",
+        "--resnet-ckpt", type=str, default=None,
+        help="Path to the ResNet-50 checkpoint. If omitted, auto-discovers the newest best_model*.pth under checkpoints/resnet50/.",
     )
     parser.add_argument(
-        "--vit-ckpt", type=str, default=str(VIT_CHECKPOINT),
-        help="Path to the ViT-B/16 checkpoint.",
+        "--vit-ckpt", type=str, default=None,
+        help="Path to the ViT-B/16 checkpoint. If omitted, auto-discovers the newest best_model*.pth under checkpoints/vit_b16/.",
     )
     parser.add_argument(
         "--save-dir", type=str, default=None,

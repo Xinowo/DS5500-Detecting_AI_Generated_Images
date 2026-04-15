@@ -44,14 +44,30 @@ def test_demo_module_imports():
 
 
 @_skip_no_gradio
-def test_checkpoint_path_constants_are_paths():
-    """RESNET_CKPT and VIT_CKPT must be Path objects pointing inside checkpoints/."""
-    from demo.app import RESNET_CKPT, VIT_CKPT  # noqa: PLC0415
+def test_checkpoint_dir_constants_are_paths():
+    """Checkpoint directory constants must be Path objects inside checkpoints/."""
+    from demo.app import RESNET_CKPT_DIR, VIT_CKPT_DIR  # noqa: PLC0415
 
-    assert isinstance(RESNET_CKPT, Path), "RESNET_CKPT should be a Path"
-    assert isinstance(VIT_CKPT, Path), "VIT_CKPT should be a Path"
-    assert "checkpoints" in RESNET_CKPT.parts, "RESNET_CKPT should be under checkpoints/"
-    assert "checkpoints" in VIT_CKPT.parts, "VIT_CKPT should be under checkpoints/"
+    assert isinstance(RESNET_CKPT_DIR, Path), "RESNET_CKPT_DIR should be a Path"
+    assert isinstance(VIT_CKPT_DIR, Path), "VIT_CKPT_DIR should be a Path"
+    assert "checkpoints" in RESNET_CKPT_DIR.parts, "RESNET_CKPT_DIR should be under checkpoints/"
+    assert "checkpoints" in VIT_CKPT_DIR.parts, "VIT_CKPT_DIR should be under checkpoints/"
+
+
+@_skip_no_gradio
+def test_find_best_checkpoint_prefers_matching_pattern(tmp_path):
+    """Checkpoint auto-discovery should resolve a best_model*.pth file."""
+    import demo.app as app  # noqa: PLC0415
+
+    older = tmp_path / "best_model_20260317_220741.pth"
+    newer = tmp_path / "best_model_20260415_101500.pth"
+    older.write_bytes(b"old")
+    newer.write_bytes(b"new")
+    older.touch()
+    newer.touch()
+
+    resolved = app._find_best_checkpoint(tmp_path, "ResNet-50")
+    assert resolved == newer
 
 
 def test_server_port_matches_docs():

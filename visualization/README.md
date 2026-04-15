@@ -11,7 +11,7 @@ This folder contains two CLI tools for inspecting model behavior.
 
 ## Grad-CAM (`gradcam.py`)
 
-Requires both model checkpoints at their default paths (or pass custom paths via flags).  
+Requires both model checkpoint directories to contain at least one `best_model*.pth` file (or pass custom paths via flags).  
 All commands are run from the **project root**.
 
 ### Quick-start
@@ -30,8 +30,8 @@ python visualization/gradcam.py --folder data/sampled_data_5k/test/ \
 
 # Custom checkpoint paths
 python visualization/gradcam.py --image path/to/image.jpg --model both \
-    --resnet-ckpt checkpoints/resnet50/best_model_resnet50.pth \
-    --vit-ckpt    checkpoints/vit_b16/best_model_20260317_220741.pth
+    --resnet-ckpt path/to/best_model_<timestamp>.pth \
+    --vit-ckpt    path/to/best_model_<timestamp>.pth
 ```
 
 ### Flag reference
@@ -40,8 +40,8 @@ python visualization/gradcam.py --image path/to/image.jpg --model both \
 |---|---|---|
 | `--image` / `--folder` | — | Single image or directory (mutually exclusive, one required) |
 | `--model` | `both` | `resnet50`, `vit`, or `both` |
-| `--resnet-ckpt` | `checkpoints/resnet50/best_model_resnet50.pth` | ResNet-50 checkpoint |
-| `--vit-ckpt` | `checkpoints/vit_b16/best_model_20260317_220741.pth` | ViT-B/16 checkpoint |
+| `--resnet-ckpt` | *(auto)* | ResNet-50 checkpoint; if omitted, auto-discovers the newest `best_model*.pth` in `checkpoints/resnet50/` |
+| `--vit-ckpt` | *(auto)* | ViT-B/16 checkpoint; if omitted, auto-discovers the newest `best_model*.pth` in `checkpoints/vit_b16/` |
 | `--save-dir` | *(interactive)* | Directory to save PNG figures; omit to display interactively |
 | `--device` | *(auto)* | `cuda` or `cpu` |
 | `--image-size` | `224` | Resize target in pixels |

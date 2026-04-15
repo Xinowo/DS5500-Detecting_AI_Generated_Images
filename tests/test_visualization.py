@@ -1,10 +1,18 @@
-"""Unit tests for visualization/visualize.py."""
+"""Unit tests for visualization helpers."""
 
 from __future__ import annotations
 
+import importlib.util
 import numpy as np
+import pytest
 
 from visualization.visualize import plot_confusion_matrix, plot_roc_curve, plot_training_curves
+
+_gradcam_available = importlib.util.find_spec("pytorch_grad_cam") is not None
+_skip_no_gradcam = pytest.mark.skipif(
+    not _gradcam_available,
+    reason="pytorch_grad_cam not installed - gradcam checkpoint discovery test skipped",
+)
 
 
 class TestPlotConfusionMatrix:
@@ -62,3 +70,19 @@ class TestPlotTrainingCurves:
         out = tmp_path / "curves_no_acc.png"
         plot_training_curves(history, save_path=out)
         assert out.exists()
+
+
+class TestGradcamCheckpointDiscovery:
+    @_skip_no_gradcam
+    def test_prefers_newest_best_model_file(self, tmp_path):
+        from visualization.gradcam import _find_best_checkpoint  # noqa: PLC0415
+
+        older = tmp_path / "best_model_20260317_220741.pth"
+        newer = tmp_path / "best_model_20260415_101500.pth"
+        older.write_bytes(b"old")
+        newer.write_bytes(b"new")
+        older.touch()
+        newer.touch()
+
+        resolved = _find_best_checkpoint(tmp_path, "ResNet-50")
+        assert resolved == newer

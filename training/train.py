@@ -11,8 +11,9 @@ The script:
   4. Builds DataLoaders.
   5. Instantiates the model via model_factory.
   6. Runs the Trainer.fit() loop.
-  7. Runs Trainer.evaluate() on the test set and saves figures/metrics under
-     the configured outputs directory (``cfg.outputs_dir``).
+  7. Runs Trainer.evaluate() on the test set, saving checkpoints / test
+     artifacts under ``cfg.save_dir`` and figures / history CSVs under
+     ``cfg.outputs_dir``.
 """
 
 from __future__ import annotations

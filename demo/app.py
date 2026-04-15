@@ -12,6 +12,7 @@ Run from the project root:
 
 from __future__ import annotations
 
+import argparse
 import csv
 import logging
 import sys
@@ -36,8 +37,10 @@ from models.vit import build_vit_b16
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
-RESNET_CKPT = ROOT / "checkpoints" / "resnet50" / "best_model_resnet50.pth"
-VIT_CKPT    = ROOT / "checkpoints" / "vit_b16"  / "best_model_20260317_220741.pth"
+RESNET_CKPT_DIR = ROOT / "checkpoints" / "resnet50"
+VIT_CKPT_DIR    = ROOT / "checkpoints" / "vit_b16"
+RESNET_CKPT_OVERRIDE: Path | None = None
+VIT_CKPT_OVERRIDE: Path | None = None
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -76,6 +79,24 @@ def _load_example_images() -> list[str]:
     return _spread_sample(example_paths)
 
 
+def _find_best_checkpoint(ckpt_dir: Path, model_label: str) -> Path:
+    """Return the newest checkpoint matching ``best_model*.pth`` in ``ckpt_dir``."""
+    if not ckpt_dir.exists():
+        raise gr.Error(
+            f"{model_label} checkpoint directory not found: {ckpt_dir}\n"
+            "Please download the checkpoints or train the model first."
+        )
+
+    candidates = sorted(ckpt_dir.glob("best_model*.pth"))
+    if not candidates:
+        raise gr.Error(
+            f"No checkpoint matching 'best_model*.pth' was found in: {ckpt_dir}\n"
+            "Please download the checkpoints or train the model first."
+        )
+
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
 # Pick a handful of example images from the test split (shown at the bottom)
 EXAMPLE_IMAGES: list[str] = _load_example_images()
 
@@ -101,13 +122,8 @@ def _load_models() -> None:
     if _cache:
         return
 
-    # Validate checkpoints exist before attempting to load
-    for model_name, ckpt_path in [("ResNet-50", RESNET_CKPT), ("ViT-B/16", VIT_CKPT)]:
-        if not ckpt_path.exists():
-            raise gr.Error(
-                f"{model_name} checkpoint not found: {ckpt_path}\n"
-                f"Please download the checkpoint or update the path in demo/app.py."
-            )
+    resnet_ckpt = RESNET_CKPT_OVERRIDE or _find_best_checkpoint(RESNET_CKPT_DIR, "ResNet-50")
+    vit_ckpt = VIT_CKPT_OVERRIDE or _find_best_checkpoint(VIT_CKPT_DIR, "ViT-B/16")
 
     # Suppress the "Trainable / Total" info log emitted by model builders
     _models_logger = logging.getLogger("models")
@@ -115,14 +131,14 @@ def _load_models() -> None:
     _models_logger.setLevel(logging.WARNING)
 
     resnet = build_resnet50(freeze_backbone=False, num_classes=2)
-    state = torch.load(RESNET_CKPT, map_location=DEVICE, weights_only=True)
+    state = torch.load(resnet_ckpt, map_location=DEVICE, weights_only=True)
     resnet.load_state_dict(state)
     resnet.to(DEVICE).eval()
     cam_resnet = GradCAM(model=resnet, target_layers=[resnet.layer4[-1]])
 
     vit = build_vit_b16(freeze_backbone=False, num_classes=2)
     _models_logger.setLevel(_prev_level)  # restore original level
-    state = torch.load(VIT_CKPT, map_location=DEVICE, weights_only=True)
+    state = torch.load(vit_ckpt, map_location=DEVICE, weights_only=True)
     vit.load_state_dict(state)
     vit.to(DEVICE).eval()
     cam_vit = GradCAM(
@@ -465,7 +481,30 @@ with gr.Blocks(theme=gr.themes.Soft(), css=CSS, title="AI Image Detector") as de
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Launch the AIGI Gradio demo.")
+    parser.add_argument(
+        "--resnet-ckpt",
+        type=str,
+        default=None,
+        help="Optional path to a ResNet-50 checkpoint. If omitted, auto-discovers the newest best_model*.pth in checkpoints/resnet50/.",
+    )
+    parser.add_argument(
+        "--vit-ckpt",
+        type=str,
+        default=None,
+        help="Optional path to a ViT-B/16 checkpoint. If omitted, auto-discovers the newest best_model*.pth in checkpoints/vit_b16/.",
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
+    args = _parse_args()
+    if args.resnet_ckpt:
+        RESNET_CKPT_OVERRIDE = Path(args.resnet_ckpt)
+    if args.vit_ckpt:
+        VIT_CKPT_OVERRIDE = Path(args.vit_ckpt)
+
     # demo.launch(
     #     server_name="127.0.0.1",
     #     share=False,

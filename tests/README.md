@@ -1,7 +1,8 @@
 # Tests
 
 72 tests covering data loading, models, training, visualization, end-to-end integration, and the demo entry-point.
-66 pass / 6 skip without gradio.
+With the full project environment installed, the expected result is `72 passed`.
+If `gradio` is missing, the 6 demo tests are skipped automatically.
 Framework: [pytest](https://docs.pytest.org/) with configuration in `pyproject.toml`.
 
 ---
@@ -32,7 +33,7 @@ All commands should be run from the **project root**.
 | `test_trainer.py` | `training.*` | `seed_everything` determinism, `_compute_metrics` values, one-epoch training loss is finite, NaN loss guard, config validation |
 | `test_visualization.py` | `visualization.visualize` | Confusion matrix, ROC curve, and training curve plots save without error |
 | `test_integration.py` | end-to-end | Build tiny dataset → train 1 epoch → evaluate → verify outputs |
-| `test_demo.py` | `demo.app` | Module imports cleanly, checkpoint path constants are well-formed `Path` objects, hard-coded port matches docs |
+| `test_demo.py` | `demo.app` | Module imports cleanly, checkpoint directory constants are well-formed `Path` objects, checkpoint auto-discovery works, hard-coded port matches docs |
 
 ---
 

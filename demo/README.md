@@ -12,11 +12,12 @@ Grad-CAM heatmaps alongside the classification verdict.
    pip install -r requirements.txt
    ```
 
-2. Both model checkpoints must exist at their default paths:
+2. Each model checkpoint directory must contain at least one file matching `best_model*.pth`:
    ```
-   checkpoints/resnet50/best_model_resnet50.pth
-   checkpoints/vit_b16/best_model_20260317_220741.pth
+   checkpoints/resnet50/best_model*.pth
+   checkpoints/vit_b16/best_model*.pth
    ```
+   The demo automatically loads the newest matching file in each directory when no explicit checkpoint path is provided.
    If you trained locally, they are created automatically by the training script.
    If you want to use the provided pretrained artifacts, download `checkpoints.zip`
    from the repo's **GitHub Releases** section and extract it at the repo root.
@@ -29,6 +30,11 @@ Run from the **project root** (not from inside `demo/`):
 
 ```bash
 python demo/app.py
+
+# optional: explicitly choose checkpoint files
+python demo/app.py \
+    --resnet-ckpt path/to/best_model_<timestamp>.pth \
+    --vit-ckpt path/to/best_model_<timestamp>.pth
 ```
 
 Gradio will print a local URL:
